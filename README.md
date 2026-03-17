@@ -1,68 +1,243 @@
-# Arcade Hub — Android App
+<div align="center">
 
-Offline mini-games app built with **Expo (React Native)**. Same games as the web version, playable on your phone without an internet connection.
+# 🎮 Arcade Hub
 
-## Run on Android
+**Your pocket-sized gaming paradise**
 
-### Option 1: Expo Go (quickest)
+A collection of 9 classic mini-games built with React Native and Expo. Play offline, track your stats, unlock achievements, and enjoy a beautiful dark/light theme experience.
 
-1. Install **Expo Go** from the Play Store on your Android device.
-2. From this folder, run:
+[Features](#-features) • [Games](#-games) • [Installation](#-installation) • [Tech Stack](#-tech-stack) • [Project Structure](#-project-structure)
+
+</div>
+
+---
+
+## ✨ Features
+
+- **9 Classic Games** — Memory Match, Reaction Test, Number Guesser, Rock Paper Scissors, Tic Tac Toe, Snake, Infinite Racing, Flappy Bird, and Breakout
+- **Fully Offline** — Play anywhere, no internet required after first load
+- **Stats Tracking** — Track your performance across all games with detailed statistics
+- **Achievement System** — Unlock achievements as you play and master each game
+- **Dark/Light Theme** — Switch between themes with a single tap
+- **Haptic Feedback** — Feel every tap and action with responsive haptics
+- **Search & Filter** — Find games quickly by name or difficulty level
+- **Responsive Design** — Optimized for all Android screen sizes
+
+## 🎯 Games
+
+### 🧠 Memory Match
+**Difficulty:** Medium  
+Flip cards and match pairs. Test your memory and concentration skills.
+
+### ⚡ Reaction Test
+**Difficulty:** Easy  
+Tap when the screen turns green! How fast are your reflexes?
+
+### 🔢 Number Guesser
+**Difficulty:** Easy  
+Guess the secret number between 1-100. Can you do it in the fewest attempts?
+
+### ✂️ Rock Paper Scissors
+**Difficulty:** Easy  
+Classic hand game against the computer. Best of luck!
+
+### ⭕ Tic Tac Toe
+**Difficulty:** Hard  
+Strategic X's and O's. Play against the computer or challenge a friend.
+
+### 🐍 Snake
+**Difficulty:** Medium  
+Eat food, grow longer, avoid walls. The classic arcade experience.
+
+### 🏎️ Infinite Racing
+**Difficulty:** Hard  
+Dodge obstacles and switch lanes. How far can you go?
+
+### 🐦 Flappy Bird
+**Difficulty:** Hard  
+Tap to fly through pipes. Timing is everything!
+
+### 🎯 Breakout
+**Difficulty:** Medium  
+Break bricks with your paddle. Clear all levels!
+
+## 📦 Installation
+
+### Prerequisites
+
+- Node.js (v16 or higher)
+- npm or yarn
+- Expo CLI (optional, but recommended)
+
+### Quick Start
+
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd mini-games-app
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server**
    ```bash
    npm start
    ```
-3. Scan the QR code with Expo Go (Android) or with the Camera app (opens in Expo Go).
-4. The app loads and runs **fully offline** after the first open.
 
-### Option 2: Android emulator
+### Running on Android
 
-1. Install [Android Studio](https://developer.android.com/studio) and set up an AVD.
-2. Set `ANDROID_HOME` (e.g. `C:\Users\<You>\AppData\Local\Android\Sdk` on Windows).
-3. Run:
+#### Option 1: Expo Go (Fastest)
+
+1. Install **Expo Go** from the Google Play Store
+2. Run `npm start` in your project directory
+3. Scan the QR code with Expo Go or your camera app
+4. The app will load and run fully offline after the first open
+
+#### Option 2: Android Emulator
+
+1. Install [Android Studio](https://developer.android.com/studio)
+2. Set up an Android Virtual Device (AVD)
+3. Set `ANDROID_HOME` environment variable
+   - Windows: `C:\Users\<YourUsername>\AppData\Local\Android\Sdk`
+   - macOS/Linux: `~/Library/Android/sdk`
+4. Run:
    ```bash
    npm run android
    ```
 
-### Option 3: Build an APK (installable offline)
+#### Option 3: Build APK
 
-1. Install EAS CLI: `npm i -g eas-cli`
-2. Log in: `eas login`
-3. Build APK:
-   ```bash
-   eas build -p android --profile preview
-   ```
-4. Download the APK from the link EAS gives you and install on your device. No store, no account needed.
+Build a standalone APK for distribution:
 
-## Games
+```bash
+# Install EAS CLI globally
+npm install -g eas-cli
 
-- **Memory Match** — flip and match pairs  
-- **Reaction Test** — tap when the screen turns green  
-- **Number Guesser** — guess the number  
-- **Rock Paper Scissors** — vs computer  
-- **Tic Tac Toe** — vs computer or a friend  
-- **Snake** — on-screen arrows or swipe  
-- **Infinite Racing** — avoid cars, lane switches  
-- **Flappy Bird** — tap to fly  
-- **Breakout** — drag paddle, tap to launch  
+# Login to your Expo account
+eas login
 
-Stats and achievements are stored locally (AsyncStorage). Theme (dark/light) and sound (haptics) can be toggled in the header.
+# Build APK
+eas build -p android --profile preview
+```
 
-## Tech
+Download the APK from the provided link and install it on your device.
 
-- Expo SDK 54, React Native  
-- `@react-native-async-storage/async-storage` — local persistence  
-- `expo-av` — (optional) audio  
-- `expo-haptics` — tap feedback  
-- `react-native-safe-area-context` — notches / status bar  
+## 🛠️ Tech Stack
 
-## Project structure
+- **Framework:** React Native 0.81.5
+- **Runtime:** Expo SDK 54
+- **UI:** React 19.1.0
+- **Storage:** @react-native-async-storage/async-storage
+- **Haptics:** expo-haptics
+- **Audio:** expo-av
+- **Safe Area:** react-native-safe-area-context
+
+## 📁 Project Structure
 
 ```
 mini-games-app/
-├── App.js                 # Hub, stats, achievements, routing
-├── src/
-│   ├── components/        # GameCard, InstructionsModal
-│   ├── games/             # All 9 game screens
-│   └── utils/             # storage, theme, sounds, achievements
-└── ...
+├── App.js                      # Main app entry, hub, routing
+├── index.js                    # Expo entry point
+├── app.json                    # Expo configuration
+├── eas.json                    # EAS Build configuration
+├── package.json                # Dependencies
+├── assets/                     # App icons and splash screens
+│   ├── icon.png
+│   ├── splash-icon.png
+│   ├── adaptive-icon.png
+│   └── favicon.png
+└── src/
+    ├── components/             # Reusable UI components
+    │   ├── GameCard.jsx        # Game selection card
+    │   └── InstructionsModal.jsx # Help modal
+    ├── games/                  # Individual game screens
+    │   ├── index.js            # Game exports
+    │   ├── MemoryGame.jsx
+    │   ├── ReactionTest.jsx
+    │   ├── NumberGuesser.jsx
+    │   ├── RockPaperScissors.jsx
+    │   ├── TicTacToe.jsx
+    │   ├── Snake.jsx
+    │   ├── InfiniteRacing.jsx
+    │   ├── FlappyBird.jsx
+    │   └── Breakout.jsx
+    └── utils/                  # Utility modules
+        ├── storage.js          # AsyncStorage wrapper
+        ├── theme.js            # Theme management
+        ├── sounds.js           # Haptic feedback
+        └── achievements.js     # Achievement system
 ```
+
+## 🎨 Features in Detail
+
+### Stats System
+Track your performance across all games:
+- Total games played
+- Games won
+- Best scores
+- Fastest reaction times
+- Minimum attempts
+
+### Achievement System
+Unlock achievements as you play:
+- First Win
+- Perfect Score
+- Speed Demon
+- Marathon Player
+- And many more!
+
+### Theme System
+Beautiful dark and light themes:
+- Smooth transitions
+- Consistent color palette
+- Optimized for readability
+- Persistent theme selection
+
+## 🚀 Scripts
+
+```bash
+npm start          # Start Expo development server
+npm run android    # Run on Android emulator/device
+npm run ios        # Run on iOS simulator (macOS only)
+npm run web        # Run in web browser
+```
+
+## 📱 Screenshots
+
+> Add your app screenshots here to showcase the UI
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to:
+- Report bugs
+- Suggest new games
+- Improve existing games
+- Enhance UI/UX
+- Add new features
+
+## 📄 License
+
+This project is open source and available under the MIT License.
+
+## 💡 Future Enhancements
+
+- [ ] Multiplayer support
+- [ ] Online leaderboards
+- [ ] More games
+- [ ] Custom themes
+- [ ] Sound effects
+- [ ] Game tutorials
+- [ ] Social sharing
+
+---
+
+<div align="center">
+
+**Made with ❤️ using React Native and Expo**
+
+⭐ Star this repo if you like it!
+
+</div>
