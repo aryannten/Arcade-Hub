@@ -1,18 +1,18 @@
 <div align="center">
 
-# 🎮 Arcade Hub
+# Arcade Hub
 
 **Your pocket-sized gaming paradise**
 
 A collection of 9 classic mini-games built with React Native and Expo. Play offline, track your stats, unlock achievements, and enjoy a beautiful dark/light theme experience.
 
-[Features](#-features) • [Games](#-games) • [Installation](#-installation) • [Tech Stack](#-tech-stack) • [Project Structure](#-project-structure)
+[Features](#features) • [Games](#games) • [Installation](#installation) • [Tech Stack](#tech-stack) • [Project Structure](#project-structure)
 
 </div>
 
 ---
 
-## ✨ Features
+## Features
 
 - **9 Classic Games** — Memory Match, Reaction Test, Number Guesser, Rock Paper Scissors, Tic Tac Toe, Snake, Infinite Racing, Flappy Bird, and Breakout
 - **Fully Offline** — Play anywhere, no internet required after first load
@@ -23,45 +23,45 @@ A collection of 9 classic mini-games built with React Native and Expo. Play offl
 - **Search & Filter** — Find games quickly by name or difficulty level
 - **Responsive Design** — Optimized for all Android screen sizes
 
-## 🎯 Games
+## Games
 
-### 🧠 Memory Match
+### Memory Match
 **Difficulty:** Medium  
 Flip cards and match pairs. Test your memory and concentration skills.
 
-### ⚡ Reaction Test
+### Reaction Test
 **Difficulty:** Easy  
 Tap when the screen turns green! How fast are your reflexes?
 
-### 🔢 Number Guesser
+### Number Guesser
 **Difficulty:** Easy  
 Guess the secret number between 1-100. Can you do it in the fewest attempts?
 
-### ✂️ Rock Paper Scissors
+### Rock Paper Scissors
 **Difficulty:** Easy  
 Classic hand game against the computer. Best of luck!
 
-### ⭕ Tic Tac Toe
+### Tic Tac Toe
 **Difficulty:** Hard  
 Strategic X's and O's. Play against the computer or challenge a friend.
 
-### 🐍 Snake
+### Snake
 **Difficulty:** Medium  
 Eat food, grow longer, avoid walls. The classic arcade experience.
 
-### 🏎️ Infinite Racing
+### Infinite Racing
 **Difficulty:** Hard  
 Dodge obstacles and switch lanes. How far can you go?
 
-### 🐦 Flappy Bird
+### Flappy Bird
 **Difficulty:** Hard  
 Tap to fly through pipes. Timing is everything!
 
-### 🎯 Breakout
+### Breakout
 **Difficulty:** Medium  
 Break bricks with your paddle. Clear all levels!
 
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 
@@ -73,7 +73,7 @@ Break bricks with your paddle. Clear all levels!
 
 1. **Clone the repository**
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/aryannten/Arcade-Hub
    cd mini-games-app
    ```
 
@@ -125,7 +125,7 @@ eas build -p android --profile preview
 
 Download the APK from the provided link and install it on your device.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Framework:** React Native 0.81.5
 - **Runtime:** Expo SDK 54
@@ -135,10 +135,10 @@ Download the APK from the provided link and install it on your device.
 - **Audio:** expo-av
 - **Safe Area:** react-native-safe-area-context
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-mini-games-app/
+Arcade-Hub/
 ├── App.js                      # Main app entry, hub, routing
 ├── index.js                    # Expo entry point
 ├── app.json                    # Expo configuration
@@ -171,7 +171,7 @@ mini-games-app/
         └── achievements.js     # Achievement system
 ```
 
-## 🎨 Features in Detail
+## Features in Detail
 
 ### Stats System
 Track your performance across all games:
@@ -196,7 +196,7 @@ Beautiful dark and light themes:
 - Optimized for readability
 - Persistent theme selection
 
-## 🚀 Scripts
+## Scripts
 
 ```bash
 npm start          # Start Expo development server
@@ -205,11 +205,11 @@ npm run ios        # Run on iOS simulator (macOS only)
 npm run web        # Run in web browser
 ```
 
-## 📱 Screenshots
+## Screenshots
 
 > Add your app screenshots here to showcase the UI
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Feel free to:
 - Report bugs
@@ -218,11 +218,11 @@ Contributions are welcome! Feel free to:
 - Enhance UI/UX
 - Add new features
 
-## 📄 License
+## License
 
 This project is open source and available under the MIT License.
 
-## 💡 Future Enhancements
+## Future Enhancements
 
 - [ ] Multiplayer support
 - [ ] Online leaderboards
@@ -236,8 +236,8 @@ This project is open source and available under the MIT License.
 
 <div align="center">
 
-**Made with ❤️ using React Native and Expo**
+**Made with React Native and Expo**
 
-⭐ Star this repo if you like it!
+Star this repo if you like it!
 
 </div>
