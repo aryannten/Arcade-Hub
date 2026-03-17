@@ -150,7 +150,8 @@ Download the APK from the provided link and install it on your device.
 ## Project Structure
 
 ```
-Arcade-Hub/
+Arcade-Hub
+/
 ├── App.js                      # Main app entry, hub, routing
 ├── index.js                    # Expo entry point
 ├── app.json                    # Expo configuration

@@ -32,15 +32,15 @@ import { achievementManager } from './src/utils/achievements'
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
 const GAMES = [
-  { id: 'memory', title: 'Memory Match', description: 'Match pairs of cards', icon: '🧠', component: MemoryGame, difficulty: 'Medium' },
-  { id: 'reactiontest', title: 'Reaction Test', description: 'Tap when green!', icon: '⚡', component: ReactionTest, difficulty: 'Easy' },
-  { id: 'numberguesser', title: 'Number Guesser', description: 'Guess 1–100', icon: '🔢', component: NumberGuesser, difficulty: 'Easy' },
-  { id: 'rockpaperscissors', title: 'Rock Paper Scissors', description: 'Beat the computer!', icon: '✂️', component: RockPaperScissors, difficulty: 'Easy' },
-  { id: 'tictactoe', title: 'Tic Tac Toe', description: 'X and O strategy', icon: '⭕', component: TicTacToe, difficulty: 'Hard' },
-  { id: 'snake', title: 'Snake', description: 'Eat food, grow long', icon: '🐍', component: Snake, difficulty: 'Medium' },
-  { id: 'infiniteracing', title: 'Infinite Racing', description: 'Avoid obstacles!', icon: '🏎️', component: InfiniteRacing, difficulty: 'Hard' },
-  { id: 'flappybird', title: 'Flappy Bird', description: 'Tap to fly', icon: '🐦', component: FlappyBird, difficulty: 'Hard' },
-  { id: 'breakout', title: 'Breakout', description: 'Break the bricks!', icon: '🎯', component: Breakout, difficulty: 'Medium' },
+  { id: 'memory', title: 'Memory Match', description: 'Match pairs of cards', iconName: 'cards', iconFamily: 'MaterialCommunityIcons', component: MemoryGame, difficulty: 'Medium' },
+  { id: 'reactiontest', title: 'Reaction Test', description: 'Tap when green!', iconName: 'flash', iconFamily: 'Ionicons', component: ReactionTest, difficulty: 'Easy' },
+  { id: 'numberguesser', title: 'Number Guesser', description: 'Guess 1–100', iconName: 'numeric', iconFamily: 'MaterialCommunityIcons', component: NumberGuesser, difficulty: 'Easy' },
+  { id: 'rockpaperscissors', title: 'Rock Paper Scissors', description: 'Beat the computer!', iconName: 'hand-rock', iconFamily: 'FontAwesome5', component: RockPaperScissors, difficulty: 'Easy' },
+  { id: 'tictactoe', title: 'Tic Tac Toe', description: 'X and O strategy', iconName: 'grid', iconFamily: 'Ionicons', component: TicTacToe, difficulty: 'Hard' },
+  { id: 'snake', title: 'Snake', description: 'Eat food, grow long', iconName: 'snake', iconFamily: 'MaterialCommunityIcons', component: Snake, difficulty: 'Medium' },
+  { id: 'infiniteracing', title: 'Infinite Racing', description: 'Avoid obstacles!', iconName: 'car-sport', iconFamily: 'Ionicons', component: InfiniteRacing, difficulty: 'Hard' },
+  { id: 'flappybird', title: 'Flappy Bird', description: 'Tap to fly', iconName: 'bird', iconFamily: 'MaterialCommunityIcons', component: FlappyBird, difficulty: 'Hard' },
+  { id: 'breakout', title: 'Breakout', description: 'Break the bricks!', iconName: 'game-controller', iconFamily: 'Ionicons', component: Breakout, difficulty: 'Medium' },
 ]
 
 export default function App() {
@@ -394,7 +394,8 @@ export default function App() {
                 key={g.id}
                 title={g.title}
                 description={g.description}
-                icon={g.icon}
+                iconName={g.iconName}
+                iconFamily={g.iconFamily}
                 difficulty={g.difficulty}
                 colors={colors}
                 onPress={() => {

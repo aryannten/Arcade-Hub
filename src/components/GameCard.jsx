@@ -1,15 +1,21 @@
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native'
+import { MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2 // 2 cards per row with padding
 
-export default function GameCard({ title, description, icon, difficulty = 'Medium', onPress, colors }) {
+export default function GameCard({ title, description, iconName, iconFamily = 'MaterialCommunityIcons', difficulty = 'Medium', onPress, colors }) {
   const diffColor =
     difficulty.toLowerCase() === 'easy'
       ? '#22c55e'
       : difficulty.toLowerCase() === 'hard'
         ? '#ef4444'
         : '#f59e0b'
+
+  const IconComponent = 
+    iconFamily === 'Ionicons' ? Ionicons :
+    iconFamily === 'FontAwesome5' ? FontAwesome5 :
+    MaterialCommunityIcons
 
   return (
     <TouchableOpacity
@@ -19,7 +25,7 @@ export default function GameCard({ title, description, icon, difficulty = 'Mediu
     >
       <View style={styles.header}>
         <View style={[styles.iconWrap, { backgroundColor: colors.primary + '25' }]}>
-          <Text style={styles.icon}>{icon}</Text>
+          <IconComponent name={iconName} size={28} color={colors.primary} />
         </View>
         <View style={[styles.badge, { backgroundColor: diffColor }]}>
           <Text style={styles.badgeText}>{difficulty}</Text>
@@ -34,7 +40,7 @@ export default function GameCard({ title, description, icon, difficulty = 'Mediu
         onPress={onPress}
         activeOpacity={0.9}
       >
-        <Text style={styles.playIcon}>▶</Text>
+        <Ionicons name="play" size={12} color="#fff" />
         <Text style={styles.playLabel}>Play</Text>
       </TouchableOpacity>
     </TouchableOpacity>
@@ -61,7 +67,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  icon: { fontSize: 26 },
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -78,6 +83,5 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     gap: 6,
   },
-  playIcon: { color: '#fff', fontSize: 10 },
   playLabel: { color: '#fff', fontWeight: '700', fontSize: 13 },
 })
