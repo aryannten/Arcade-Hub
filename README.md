@@ -6,9 +6,21 @@
 
 A collection of 9 classic mini-games built with React Native and Expo. Play offline, track your stats, unlock achievements, and enjoy a beautiful dark/light theme experience.
 
+[![Download APK](https://img.shields.io/badge/Download-APK-brightgreen?style=for-the-badge&logo=android)](https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest)
+
 [Features](#features) • [Games](#games) • [Installation](#installation) • [Tech Stack](#tech-stack) • [Project Structure](#project-structure)
 
 </div>
+
+---
+
+## Quick Download
+
+**Want to try it right away?**
+
+Download the latest APK from our [Releases page](https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest) and install it on your Android device.
+
+> Note: You may need to enable "Install from Unknown Sources" in your Android settings.
 
 ---
 
