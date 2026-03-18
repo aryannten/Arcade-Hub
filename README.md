@@ -6,7 +6,7 @@
 
 A collection of 7 classic mini-games built with React Native and Expo. Play offline, track your stats, unlock achievements, and enjoy a modern neon glassmorphism design with beautiful dark/light theme experience.
 
-[![Download APK](https://img.shields.io/badge/Download-APK-brightgreen?style=for-the-badge&logo=android)](https://github.com/aryannten/Arcade-Hub/releases/tag/v0.1.0)
+[![Download APK](https://img.shields.io/badge/Download-APK-brightgreen?style=for-the-badge&logo=android)](https://github.com/aryannten/Arcade-Hub/releases/tag/v1.0.1)
 
 [Features](#-features) • [Games](#-games) • [Tech Stack](#%EF%B8%8F-tech-stack) • [Open Source](#-open-source)
 
@@ -18,7 +18,7 @@ A collection of 7 classic mini-games built with React Native and Expo. Play offl
 
 **Ready to play?**
 
-Download the latest APK from our [Releases page](https://github.com/aryannten/Arcade-Hub/releases/tag/v0.1.0) and install it on your Android device.
+Download the latest APK from our [Releases page](https://github.com/aryannten/Arcade-Hub/releases/tag/v1.0.1) and install it on your Android device.
 
 > Note: You may need to enable "Install from Unknown Sources" in your Android settings.
 
