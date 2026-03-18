@@ -20,14 +20,18 @@ import {
   RockPaperScissors,
   TicTacToe,
   Snake,
-  InfiniteRacing,
   FlappyBird,
-  Breakout,
 } from './src/games'
 import { storage } from './src/utils/storage'
 import { themeManager, themes } from './src/utils/theme'
 import { soundManager } from './src/utils/sounds'
 import { achievementManager } from './src/utils/achievements'
+import { colors, gradients, spacing, typography, shadows } from './src/design/tokens'
+import GlassCard from './src/design/components/GlassCard'
+import GradientButton from './src/design/components/GradientButton'
+import StatBar from './src/design/components/StatBar'
+import DifficultyBadge from './src/design/components/DifficultyBadge'
+import NeonText from './src/design/components/NeonText'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
@@ -38,9 +42,7 @@ const GAMES = [
   { id: 'rockpaperscissors', title: 'Rock Paper Scissors', description: 'Beat the computer!', iconName: 'hand-rock', iconFamily: 'FontAwesome5', component: RockPaperScissors, difficulty: 'Easy' },
   { id: 'tictactoe', title: 'Tic Tac Toe', description: 'X and O strategy', iconName: 'grid', iconFamily: 'Ionicons', component: TicTacToe, difficulty: 'Hard' },
   { id: 'snake', title: 'Snake', description: 'Eat food, grow long', iconName: 'snake', iconFamily: 'MaterialCommunityIcons', component: Snake, difficulty: 'Medium' },
-  { id: 'infiniteracing', title: 'Infinite Racing', description: 'Avoid obstacles!', iconName: 'car-sport', iconFamily: 'Ionicons', component: InfiniteRacing, difficulty: 'Hard' },
   { id: 'flappybird', title: 'Flappy Bird', description: 'Tap to fly', iconName: 'bird', iconFamily: 'MaterialCommunityIcons', component: FlappyBird, difficulty: 'Hard' },
-  { id: 'breakout', title: 'Breakout', description: 'Break the bricks!', iconName: 'game-controller', iconFamily: 'Ionicons', component: Breakout, difficulty: 'Medium' },
 ]
 
 export default function App() {
@@ -56,7 +58,7 @@ export default function App() {
   const [statsData, setStatsData] = useState({})
   const [achievementsData, setAchievementsData] = useState([])
 
-  const colors = themes[theme] || themes.dark
+  const themeColors = themes[theme] || themes.dark
 
   useEffect(() => {
     (async () => {
@@ -152,9 +154,9 @@ export default function App() {
   if (currentGame && currentGameData) {
     const Game = currentGameData.component
     return (
-      <SafeAreaView style={[styles.root, { backgroundColor: colors.bg }]} edges={['top']}>
+      <SafeAreaView style={[styles.root, { backgroundColor: colors.Background }]} edges={['top']}>
         <ExpoStatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-        <Game onBack={handleBackToHub} colors={colors} />
+        <Game onBack={handleBackToHub} colors={themeColors} />
       </SafeAreaView>
     )
   }
@@ -163,23 +165,23 @@ export default function App() {
   if (showAchievements) {
     const unlocked = achievementsData.filter((a) => a.unlocked).length
     return (
-      <SafeAreaView style={[styles.root, { backgroundColor: colors.bg }]} edges={['top']}>
+      <SafeAreaView style={[styles.root, { backgroundColor: colors.Background }]} edges={['top']}>
         <ExpoStatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-        <View style={[styles.topBar, { backgroundColor: colors.cardBg, borderBottomColor: colors.border }]}>
+        <View style={[styles.topBar, { backgroundColor: themeColors.cardBg, borderBottomColor: themeColors.border }]}>
           <TouchableOpacity
             onPress={() => { setShowAchievements(false); soundManager.playClick() }}
             style={styles.topBarBtn}
           >
-            <Text style={[styles.topBarBtnText, { color: colors.primary }]}>← Back</Text>
+            <Text style={[styles.topBarBtnText, { color: themeColors.primary }]}>← Back</Text>
           </TouchableOpacity>
-          <Text style={[styles.topBarTitle, { color: colors.text }]}>🏅 Achievements</Text>
+          <Text style={[styles.topBarTitle, { color: themeColors.text }]}>🏅 Achievements</Text>
           <View style={styles.topBarBtn} />
         </View>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={[styles.progressBar, { backgroundColor: colors.cardBg }]}>
-            <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${(unlocked / achievementsData.length) * 100}%` }]} />
+          <View style={[styles.progressBar, { backgroundColor: themeColors.cardBg }]}>
+            <View style={[styles.progressFill, { backgroundColor: themeColors.primary, width: `${(unlocked / achievementsData.length) * 100}%` }]} />
           </View>
-          <Text style={[styles.progressText, { color: colors.textSecondary }]}>
+          <Text style={[styles.progressText, { color: themeColors.textSecondary }]}>
             {unlocked} / {achievementsData.length} unlocked
           </Text>
           <View style={styles.listContainer}>
@@ -188,17 +190,17 @@ export default function App() {
                 key={a.id}
                 style={[
                   styles.achCard,
-                  { backgroundColor: colors.cardBg, borderColor: a.unlocked ? colors.primary : colors.border },
+                  { backgroundColor: themeColors.cardBg, borderColor: a.unlocked ? themeColors.primary : themeColors.border },
                 ]}
               >
-                <View style={[styles.achIconWrap, { backgroundColor: a.unlocked ? colors.primary + '30' : colors.border + '50' }]}>
+                <View style={[styles.achIconWrap, { backgroundColor: a.unlocked ? themeColors.primary + '30' : themeColors.border + '50' }]}>
                   <Text style={styles.achIcon}>{a.icon}</Text>
                 </View>
                 <View style={styles.achInfo}>
-                  <Text style={[styles.achName, { color: colors.text }]}>{a.name}</Text>
-                  <Text style={[styles.achDesc, { color: colors.textSecondary }]}>{a.description}</Text>
+                  <Text style={[styles.achName, { color: themeColors.text }]}>{a.name}</Text>
+                  <Text style={[styles.achDesc, { color: themeColors.textSecondary }]}>{a.description}</Text>
                 </View>
-                {a.unlocked && <Text style={[styles.achBadge, { color: colors.primary }]}>✓</Text>}
+                {a.unlocked && <Text style={[styles.achBadge, { color: themeColors.primary }]}>✓</Text>}
               </View>
             ))}
           </View>
@@ -211,22 +213,22 @@ export default function App() {
   if (showStats) {
     const totalPlayed = Object.values(statsData).reduce((s, g) => s + (g.gamesPlayed || 0), 0)
     return (
-      <SafeAreaView style={[styles.root, { backgroundColor: colors.bg }]} edges={['top']}>
+      <SafeAreaView style={[styles.root, { backgroundColor: colors.Background }]} edges={['top']}>
         <ExpoStatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-        <View style={[styles.topBar, { backgroundColor: colors.cardBg, borderBottomColor: colors.border }]}>
+        <View style={[styles.topBar, { backgroundColor: themeColors.cardBg, borderBottomColor: themeColors.border }]}>
           <TouchableOpacity
             onPress={() => { setShowStats(false); soundManager.playClick() }}
             style={styles.topBarBtn}
           >
-            <Text style={[styles.topBarBtnText, { color: colors.primary }]}>← Back</Text>
+            <Text style={[styles.topBarBtnText, { color: themeColors.primary }]}>← Back</Text>
           </TouchableOpacity>
-          <Text style={[styles.topBarTitle, { color: colors.text }]}>📊 Statistics</Text>
+          <Text style={[styles.topBarTitle, { color: themeColors.text }]}>📊 Statistics</Text>
           <TouchableOpacity onPress={handleClearStats} style={styles.topBarBtn}>
-            <Text style={[styles.topBarBtnText, { color: colors.error }]}>Clear</Text>
+            <Text style={[styles.topBarBtnText, { color: themeColors.error }]}>Clear</Text>
           </TouchableOpacity>
         </View>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={[styles.totalCard, { backgroundColor: colors.primary }]}>
+          <View style={[styles.totalCard, { backgroundColor: themeColors.primary }]}>
             <Text style={styles.totalLabel}>Total Games Played</Text>
             <Text style={styles.totalValue}>{totalPlayed}</Text>
           </View>
@@ -236,36 +238,36 @@ export default function App() {
               return (
                 <View
                   key={g.id}
-                  style={[styles.statCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
+                  style={[styles.statCard, { backgroundColor: themeColors.cardBg, borderColor: themeColors.border }]}
                 >
                   <Text style={styles.statIcon}>{g.icon}</Text>
-                  <Text style={[styles.statTitle, { color: colors.text }]} numberOfLines={1}>{g.title}</Text>
+                  <Text style={[styles.statTitle, { color: themeColors.text }]} numberOfLines={1}>{g.title}</Text>
                   <View style={styles.statRow}>
-                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Played</Text>
-                    <Text style={[styles.statValue, { color: colors.text }]}>{st.gamesPlayed ?? 0}</Text>
+                    <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Played</Text>
+                    <Text style={[styles.statValue, { color: themeColors.text }]}>{st.gamesPlayed ?? 0}</Text>
                   </View>
                   {st.gamesWon > 0 && (
                     <View style={styles.statRow}>
-                      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Won</Text>
-                      <Text style={[styles.statValue, { color: colors.success }]}>{st.gamesWon}</Text>
+                      <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Won</Text>
+                      <Text style={[styles.statValue, { color: themeColors.success }]}>{st.gamesWon}</Text>
                     </View>
                   )}
                   {st.bestScore != null && (
                     <View style={styles.statRow}>
-                      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Best</Text>
-                      <Text style={[styles.statValue, { color: colors.primary }]}>{st.bestScore}</Text>
+                      <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Best</Text>
+                      <Text style={[styles.statValue, { color: themeColors.primary }]}>{st.bestScore}</Text>
                     </View>
                   )}
                   {st.bestReaction != null && (
                     <View style={styles.statRow}>
-                      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Reaction</Text>
-                      <Text style={[styles.statValue, { color: colors.primary }]}>{st.bestReaction}ms</Text>
+                      <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Reaction</Text>
+                      <Text style={[styles.statValue, { color: themeColors.primary }]}>{st.bestReaction}ms</Text>
                     </View>
                   )}
                   {st.minAttempts != null && (
                     <View style={styles.statRow}>
-                      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Attempts</Text>
-                      <Text style={[styles.statValue, { color: colors.primary }]}>{st.minAttempts}</Text>
+                      <Text style={[styles.statLabel, { color: themeColors.textSecondary }]}>Attempts</Text>
+                      <Text style={[styles.statValue, { color: themeColors.primary }]}>{st.minAttempts}</Text>
                     </View>
                   )}
                 </View>
@@ -279,7 +281,7 @@ export default function App() {
 
   // Main hub
   return (
-    <SafeAreaView style={[styles.root, { backgroundColor: colors.bg }]} edges={['top']}>
+    <SafeAreaView style={[styles.root, { backgroundColor: colors.Background }]} edges={['top']}>
       <ExpoStatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <ScrollView 
         contentContainerStyle={styles.scrollContent} 
@@ -292,20 +294,22 @@ export default function App() {
             <View style={styles.headerLeft}>
               <Text style={styles.logo}>🎮</Text>
               <View>
-                <Text style={[styles.title, { color: colors.text }]}>Arcade Hub</Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Play offline</Text>
+                <NeonText color={colors.NeonCyan} size={typography.fontSize.xl}>
+                  Arcade Hub
+                </NeonText>
+                <Text style={[styles.subtitle, { color: colors.TextMuted }]}>Play offline</Text>
               </View>
             </View>
             <View style={styles.headerRight}>
               <TouchableOpacity 
                 onPress={toggleSound} 
-                style={[styles.iconBtn, { backgroundColor: colors.cardBg }]}
+                style={[styles.iconBtn, { backgroundColor: colors.Surface }]}
               >
                 <Text style={styles.iconBtnText}>{soundEnabled ? '🔊' : '🔇'}</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 onPress={toggleTheme} 
-                style={[styles.iconBtn, { backgroundColor: colors.cardBg }]}
+                style={[styles.iconBtn, { backgroundColor: colors.Surface }]}
               >
                 <Text style={styles.iconBtnText}>{theme === 'dark' ? '☀️' : '🌙'}</Text>
               </TouchableOpacity>
@@ -317,40 +321,40 @@ export default function App() {
         <View style={styles.quickActions}>
           <TouchableOpacity
             onPress={() => { setShowStats(true); soundManager.playClick() }}
-            style={[styles.quickBtn, { backgroundColor: colors.cardBg }]}
+            style={[styles.quickBtn, { backgroundColor: colors.Surface }]}
           >
             <Text style={styles.quickIcon}>📊</Text>
-            <Text style={[styles.quickLabel, { color: colors.text }]}>Stats</Text>
+            <Text style={[styles.quickLabel, { color: colors.TextPrimary }]}>Stats</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => { setShowAchievements(true); soundManager.playClick() }}
-            style={[styles.quickBtn, { backgroundColor: colors.cardBg }]}
+            style={[styles.quickBtn, { backgroundColor: colors.Surface }]}
           >
             <Text style={styles.quickIcon}>🏅</Text>
-            <Text style={[styles.quickLabel, { color: colors.text }]}>Achievements</Text>
+            <Text style={[styles.quickLabel, { color: colors.TextPrimary }]}>Achievements</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => { setShowInstructions('all'); soundManager.playClick() }}
-            style={[styles.quickBtn, { backgroundColor: colors.cardBg }]}
+            style={[styles.quickBtn, { backgroundColor: colors.Surface }]}
           >
             <Text style={styles.quickIcon}>❓</Text>
-            <Text style={[styles.quickLabel, { color: colors.text }]}>Help</Text>
+            <Text style={[styles.quickLabel, { color: colors.TextPrimary }]}>Help</Text>
           </TouchableOpacity>
         </View>
 
         {/* Search */}
-        <View style={[styles.searchWrap, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+        <View style={[styles.searchWrap, { backgroundColor: colors.Surface, borderColor: colors.SurfaceBorder }]}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
+            style={[styles.searchInput, { color: colors.TextPrimary }]}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search games..."
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor={colors.TextMuted}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Text style={[styles.clearSearch, { color: colors.textSecondary }]}>✕</Text>
+              <Text style={[styles.clearSearch, { color: colors.TextMuted }]}>✕</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -363,10 +367,10 @@ export default function App() {
               onPress={() => setDifficultyFilter(d)}
               style={[
                 styles.filterBtn,
-                { backgroundColor: difficultyFilter === d ? colors.primary : colors.cardBg },
+                { backgroundColor: difficultyFilter === d ? colors.NeonCyan : colors.Surface },
               ]}
             >
-              <Text style={[styles.filterBtnText, { color: difficultyFilter === d ? '#fff' : colors.text }]}>
+              <Text style={[styles.filterBtnText, { color: difficultyFilter === d ? '#fff' : colors.TextPrimary }]}>
                 {d === 'all' ? '🎮 All' : d === 'easy' ? '🟢 Easy' : d === 'medium' ? '🟡 Medium' : '🔴 Hard'}
               </Text>
             </TouchableOpacity>
@@ -375,7 +379,7 @@ export default function App() {
 
         {/* Results hint */}
         {searchQuery.length > 0 && (
-          <Text style={[styles.resultHint, { color: colors.textSecondary }]}>
+          <Text style={[styles.resultHint, { color: colors.TextMuted }]}>
             Found {filteredGames.length} game{filteredGames.length !== 1 ? 's' : ''}
           </Text>
         )}
@@ -385,11 +389,11 @@ export default function App() {
           {filteredGames.length === 0 ? (
             <View style={styles.empty}>
               <Text style={styles.emptyIcon}>🎯</Text>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>No games found</Text>
-              <Text style={[styles.emptySub, { color: colors.textSecondary }]}>Try a different search</Text>
+              <Text style={[styles.emptyTitle, { color: colors.TextPrimary }]}>No games found</Text>
+              <Text style={[styles.emptySub, { color: colors.TextMuted }]}>Try a different search</Text>
             </View>
           ) : (
-            filteredGames.map((g) => (
+            filteredGames.map((g, index) => (
               <GameCard
                 key={g.id}
                 title={g.title}
@@ -397,7 +401,8 @@ export default function App() {
                 iconName={g.iconName}
                 iconFamily={g.iconFamily}
                 difficulty={g.difficulty}
-                colors={colors}
+                colors={themeColors}
+                index={index}
                 onPress={() => {
                   setCurrentGame(g.id)
                   soundManager.playClick()
@@ -409,8 +414,8 @@ export default function App() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-            Arcade Hub • Made with ❤️
+          <Text style={[styles.footerText, { color: colors.TextMuted }]}>
+            Arcade Hub 
           </Text>
         </View>
       </ScrollView>
@@ -420,18 +425,18 @@ export default function App() {
         visible={!!showInstructions}
         gameId={showInstructions}
         onClose={() => setShowInstructions(null)}
-        colors={colors}
+        colors={themeColors}
       />
 
       {/* Achievement popup */}
       {newAchievements.length > 0 && (
         <View style={styles.achPopup}>
           {newAchievements.map((a) => (
-            <View key={a.id} style={[styles.achPopupItem, { backgroundColor: colors.cardBg, borderColor: colors.primary }]}>
+            <View key={a.id} style={[styles.achPopupItem, { backgroundColor: themeColors.cardBg, borderColor: themeColors.primary }]}>
               <Text style={styles.achPopupIcon}>{a.icon}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.achPopupTitle, { color: colors.primary }]}>Achievement Unlocked!</Text>
-                <Text style={[styles.achPopupName, { color: colors.text }]}>{a.name}</Text>
+                <Text style={[styles.achPopupTitle, { color: themeColors.primary }]}>Achievement Unlocked!</Text>
+                <Text style={[styles.achPopupName, { color: themeColors.text }]}>{a.name}</Text>
               </View>
             </View>
           ))}
@@ -453,7 +458,6 @@ const styles = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerRight: { flexDirection: 'row', gap: 8 },
   logo: { fontSize: 40 },
-  title: { fontSize: 22, fontWeight: '800' },
   subtitle: { fontSize: 13, marginTop: 2 },
   iconBtn: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   iconBtnText: { fontSize: 20 },

@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native'
+import LinearGradient from 'react-native-linear-gradient'
 import { storage } from '../utils/storage'
+import { colors as designColors, gradients, spacing, typography, shadows } from '../design/tokens'
+import GlassCard from '../design/components/GlassCard'
+import GradientButton from '../design/components/GradientButton'
+import StatBar from '../design/components/StatBar'
 
 export default function ReactionTest({ onBack, colors }) {
   const [phase, setPhase] = useState('start') // start | wait | go | result
@@ -8,21 +13,44 @@ export default function ReactionTest({ onBack, colors }) {
   const [reaction, setReaction] = useState(null)
   const [best, setBest] = useState(null)
   const timeoutRef = useRef(null)
+  
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const colorAnim = useRef(new Animated.Value(0)).current
+  const scaleAnim = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
     storage.getGameStats('reactiontest').then((s) => {
       if (s.bestReaction != null) setBest(s.bestReaction)
     })
+    // Entry animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true
+    }).start()
     return () => clearTimeout(timeoutRef.current)
   }, [])
 
   const begin = () => {
     setReaction(null)
     setPhase('wait')
+    // Animate to wait color
+    Animated.timing(colorAnim, {
+      toValue: 0.5,
+      duration: 300,
+      useNativeDriver: false
+    }).start()
     const delay = 800 + Math.floor(Math.random() * 2000)
     timeoutRef.current = setTimeout(() => {
       setPhase('go')
       setStartTime(performance.now())
+      // Animate to go color
+      Animated.timing(colorAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: false
+      }).start()
     }, delay)
   }
 
@@ -31,12 +59,37 @@ export default function ReactionTest({ onBack, colors }) {
       clearTimeout(timeoutRef.current)
       setPhase('start')
       setReaction('Too soon!')
+      // Reset color animation
+      Animated.timing(colorAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false
+      }).start()
       return
     }
     if (phase === 'go') {
       const rt = Math.round(performance.now() - startTime)
       setReaction(rt)
       setPhase('result')
+      // Result scale animation
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.1,
+          duration: 200,
+          useNativeDriver: true
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true
+        })
+      ]).start()
+      // Reset color animation
+      Animated.timing(colorAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false
+      }).start()
       if (best == null || rt < best) {
         setBest(rt)
         storage.updateGameStats('reactiontest', { gamesPlayed: 1, bestReaction: rt })
@@ -53,88 +106,199 @@ export default function ReactionTest({ onBack, colors }) {
   const reset = () => {
     setPhase('start')
     setReaction(null)
+    // Reset color animation
+    Animated.timing(colorAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: false
+    }).start()
   }
 
-  const boxBg =
-    phase === 'start' ? colors.cardBg
-    : phase === 'wait' ? colors.warning + '40'
-    : phase === 'go' ? colors.success
-    : colors.cardBg
+  // Interpolate background color for tap area
+  const tapAreaBg = colorAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [
+      designColors.Surface,
+      designColors.NeonAmber + '40',
+      designColors.Success + '80'
+    ]
+  })
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={[styles.btn, { backgroundColor: colors.cardBg }]}>
-          <Text style={[styles.btnText, { color: colors.text }]}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Reaction Test</Text>
-        <View style={styles.placeholder} />
-      </View>
-
-      <TouchableOpacity
-        style={[styles.box, { backgroundColor: boxBg, borderColor: colors.border }]}
-        onPress={phase === 'start' ? begin : handlePress}
-        activeOpacity={1}
-      >
-        {phase === 'start' && (
-          <View style={styles.centered}>
-            <Text style={[styles.msg, { color: colors.text }]}>Tap to start</Text>
-            <View style={[styles.startBtn, { backgroundColor: colors.primary }]}>
-              <Text style={styles.startBtnText}>Start Test</Text>
-            </View>
+    <View style={styles.container}>
+      <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
+        {/* Header with gradient accent */}
+        <LinearGradient
+          colors={gradients.reactionTest}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.headerGradient}
+        >
+          <View style={styles.header}>
+            <GradientButton
+              gradient={gradients.reactionTest}
+              label="← Back"
+              onPress={onBack}
+              style={styles.backButton}
+            />
+            <Text style={styles.title}>Reaction Test</Text>
+            <View style={styles.placeholder} />
           </View>
-        )}
-        {phase === 'wait' && <Text style={[styles.msg, { color: colors.text }]}>Wait for green...</Text>}
-        {phase === 'go' && <Text style={[styles.msg, { color: '#fff' }]}>Tap!</Text>}
-        {phase === 'result' && (
-          <View style={styles.centered}>
-            <Text style={[styles.msg, { color: colors.text }]}>
-              {reaction === 'Too soon!' ? reaction : `${reaction} ms`}
-            </Text>
-            <View style={[styles.startBtn, { backgroundColor: colors.primary }]}>
-              <Text style={styles.startBtnText}>Try Again</Text>
-            </View>
-          </View>
-        )}
-      </TouchableOpacity>
+        </LinearGradient>
 
-      <View style={[styles.footer, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-        <TouchableOpacity onPress={reset} style={[styles.footerBtn, { borderColor: colors.border }]}>
-          <Text style={[styles.footerBtnText, { color: colors.text }]}>Reset</Text>
+        {/* Tap area with glassmorphism and neon border */}
+        <TouchableOpacity
+          style={styles.tapAreaTouchable}
+          onPress={phase === 'start' ? begin : handlePress}
+          activeOpacity={1}
+        >
+          <Animated.View
+            style={[
+              styles.tapArea,
+              {
+                backgroundColor: phase === 'start' || phase === 'result' 
+                  ? designColors.Surface 
+                  : tapAreaBg
+              }
+            ]}
+          >
+            {phase === 'start' && (
+              <View style={styles.centered}>
+                <Text style={styles.msg}>Tap to start</Text>
+                <GradientButton
+                  gradient={gradients.reactionTest}
+                  label="Start Test"
+                  onPress={begin}
+                  style={styles.startButton}
+                />
+              </View>
+            )}
+            {phase === 'wait' && (
+              <Text style={styles.msg}>Wait for green...</Text>
+            )}
+            {phase === 'go' && (
+              <Text style={[styles.msg, styles.msgGo]}>Tap!</Text>
+            )}
+            {phase === 'result' && (
+              <Animated.View style={[styles.centered, { transform: [{ scale: scaleAnim }] }]}>
+                <Text style={styles.msg}>
+                  {reaction === 'Too soon!' ? reaction : `${reaction} ms`}
+                </Text>
+                <GradientButton
+                  gradient={gradients.reactionTest}
+                  label="Try Again"
+                  onPress={begin}
+                  style={styles.startButton}
+                />
+              </Animated.View>
+            )}
+          </Animated.View>
         </TouchableOpacity>
-        <View style={styles.stats}>
-          <Text style={[styles.statText, { color: colors.text }]}>
-            Last: {reaction ? (reaction === 'Too soon!' ? reaction : `${reaction} ms`) : '–'}
-          </Text>
-          <Text style={[styles.statText, { color: colors.text }]}>Best: {best != null ? `${best} ms` : '–'}</Text>
-        </View>
-      </View>
+
+        {/* Stats with StatBar components */}
+        <GlassCard style={styles.statsCard}>
+          <StatBar
+            label="Last"
+            value={reaction ? (reaction === 'Too soon!' ? reaction : `${reaction} ms`) : '–'}
+            color={designColors.Success}
+          />
+          <View style={styles.statSpacer} />
+          <StatBar
+            label="Best"
+            value={best != null ? `${best} ms` : '–'}
+            color={designColors.Success}
+          />
+        </GlassCard>
+
+        {/* Reset button */}
+        <GradientButton
+          gradient={gradients.reactionTest}
+          label="Reset"
+          onPress={reset}
+          style={styles.resetButton}
+        />
+      </Animated.View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 },
-  btn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
-  btnText: { fontWeight: '600' },
-  title: { fontSize: 18, fontWeight: '700' },
-  placeholder: { width: 70 },
-  box: {
+  container: {
     flex: 1,
-    margin: 16,
-    borderRadius: 16,
+    backgroundColor: designColors.Background
+  },
+  headerGradient: {
+    borderRadius: spacing.lg,
+    padding: 2,
+    margin: spacing.lg,
+    marginBottom: spacing.md
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: designColors.Background,
+    borderRadius: spacing.lg,
+    padding: spacing.md
+  },
+  backButton: {
+    minHeight: 44,
+    minWidth: 80
+  },
+  title: {
+    fontSize: typography.fontSize.xl,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    color: designColors.TextPrimary,
+    textAlign: 'center'
+  },
+  placeholder: {
+    width: 80
+  },
+  tapAreaTouchable: {
+    flex: 1,
+    margin: spacing.lg,
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
+    minHeight: 300
+  },
+  tapArea: {
+    flex: 1,
+    borderRadius: spacing.lg,
     borderWidth: 2,
+    borderColor: designColors.Success,
     justifyContent: 'center',
     alignItems: 'center',
+    ...shadows.neonGlow
   },
-  msg: { fontSize: 22, fontWeight: '600', marginBottom: 12 },
-  centered: { alignItems: 'center' },
-  startBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 10 },
-  startBtnText: { color: '#fff', fontWeight: '600' },
-  footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderTopWidth: 1 },
-  footerBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, borderWidth: 1 },
-  footerBtnText: { fontWeight: '600' },
-  stats: { gap: 4 },
-  statText: { fontSize: 14 },
+  centered: {
+    alignItems: 'center'
+  },
+  msg: {
+    fontSize: typography.fontSize.xxl,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    color: designColors.TextPrimary,
+    marginBottom: spacing.lg
+  },
+  msgGo: {
+    color: '#FFFFFF',
+    fontSize: 48
+  },
+  startButton: {
+    minHeight: 44,
+    minWidth: 120
+  },
+  statsCard: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md
+  },
+  statSpacer: {
+    height: spacing.sm
+  },
+  resetButton: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    minHeight: 44
+  }
 })

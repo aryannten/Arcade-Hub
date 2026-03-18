@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native'
+import { View, Text, StyleSheet, Dimensions, Animated } from 'react-native'
+import LinearGradient from 'react-native-linear-gradient'
 import { storage } from '../utils/storage'
 import { soundManager } from '../utils/sounds'
+import { colors as designColors, gradients, spacing, typography, shadows } from '../design/tokens'
+import GlassCard from '../design/components/GlassCard'
+import GradientButton from '../design/components/GradientButton'
+import StatBar from '../design/components/StatBar'
 
 const W = Dimensions.get('window').width
 const LANE_W = W / 3
@@ -29,6 +34,10 @@ export default function InfiniteRacing({ onBack, colors }) {
   const pauseRef = useRef(false)
   const idRef = useRef(0)
   const loopRef = useRef(null)
+  
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const playerPosAnim = useRef(new Animated.Value(laneX(1))).current
 
   useEffect(() => {
     laneRef.current = lane
@@ -50,6 +59,13 @@ export default function InfiniteRacing({ onBack, colors }) {
     storage.getGameStats('infiniteracing').then((s) => {
       if (s.bestScore != null) setHighScore(s.bestScore)
     })
+    
+    // Entry animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true
+    }).start()
   }, [])
 
   const left = useCallback(() => {
@@ -57,15 +73,27 @@ export default function InfiniteRacing({ onBack, colors }) {
     const n = laneRef.current - 1
     laneRef.current = n
     setLane(n)
+    // Smooth player movement animation
+    Animated.timing(playerPosAnim, {
+      toValue: laneX(n),
+      duration: 150,
+      useNativeDriver: true
+    }).start()
     soundManager.playMove()
-  }, [])
+  }, [playerPosAnim])
   const right = useCallback(() => {
     if (overRef.current || pauseRef.current || laneRef.current >= 2) return
     const n = laneRef.current + 1
     laneRef.current = n
     setLane(n)
+    // Smooth player movement animation
+    Animated.timing(playerPosAnim, {
+      toValue: laneX(n),
+      duration: 150,
+      useNativeDriver: true
+    }).start()
     soundManager.playMove()
-  }, [])
+  }, [playerPosAnim])
 
   const collides = useCallback((obs) => {
     const px = laneX(laneRef.current)

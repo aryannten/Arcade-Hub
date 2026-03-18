@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated } from 'react-native'
+import LinearGradient from 'react-native-linear-gradient'
 import { storage } from '../utils/storage'
 import { soundManager } from '../utils/sounds'
+import { colors as designColors, gradients, spacing, typography, shadows } from '../design/tokens'
+import GlassCard from '../design/components/GlassCard'
+import GradientButton from '../design/components/GradientButton'
+import StatBar from '../design/components/StatBar'
 
 const GRID = 18
 const CELL = Math.floor((Dimensions.get('window').width - 32) / GRID)
@@ -18,6 +23,10 @@ export default function Snake({ onBack, colors }) {
   const [highScore, setHighScore] = useState(0)
   const dirRef = useRef(DIRS.right)
   const loopRef = useRef(null)
+  
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const foodPulseAnim = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
     dirRef.current = dir
@@ -27,6 +36,29 @@ export default function Snake({ onBack, colors }) {
     storage.getGameStats('snake').then((s) => {
       if (s.bestScore != null) setHighScore(s.bestScore)
     })
+    
+    // Entry animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true
+    }).start()
+    
+    // Food pulse animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(foodPulseAnim, {
+          toValue: 1.2,
+          duration: 500,
+          useNativeDriver: true
+        }),
+        Animated.timing(foodPulseAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true
+        })
+      ])
+    ).start()
   }, [])
 
   const genFood = useCallback(() => ({
@@ -125,78 +157,234 @@ export default function Snake({ onBack, colors }) {
   const size = GRID * CELL
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={[styles.btn, { backgroundColor: colors.cardBg }]}>
-          <Text style={[styles.btnText, { color: colors.text }]}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Snake</Text>
-        <TouchableOpacity onPress={reset} style={[styles.btn, { backgroundColor: colors.cardBg }]}>
-          <Text style={[styles.btnText, { color: colors.text }]}>Reset</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={styles.container}>
+      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+        {/* Header with gradient accent */}
+        <LinearGradient
+          colors={gradients.snake}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.headerGradient}
+        >
+          <View style={styles.header}>
+            <GradientButton
+              gradient={gradients.snake}
+              label="← Back"
+              onPress={onBack}
+              style={styles.backButton}
+            />
+            <Text style={styles.title}>Snake</Text>
+            <GradientButton
+              gradient={gradients.snake}
+              label="Reset"
+              onPress={reset}
+              style={styles.resetButton}
+            />
+          </View>
+        </LinearGradient>
 
-      <View style={[styles.info, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-        <Text style={[styles.infoText, { color: colors.text }]}>Score: {score}</Text>
-        <Text style={[styles.infoText, { color: colors.text }]}>Best: {highScore}</Text>
-        {paused && <Text style={[styles.pauseText, { color: colors.warning }]}>⏸ Paused</Text>}
-        {gameOver && <Text style={[styles.overText, { color: colors.error }]}>Game Over</Text>}
-      </View>
-
-      <View style={[styles.board, { width: size, height: size, backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-        <View style={[styles.food, { left: food.x * CELL, top: food.y * CELL, width: CELL - 2, height: CELL - 2 }]} />
-        {snake.map((seg, i) => (
-          <View
-            key={i}
-            style={[
-              styles.seg,
-              { left: seg.x * CELL, top: seg.y * CELL, width: CELL - 2, height: CELL - 2, backgroundColor: i === 0 ? colors.primary : colors.primary + 'aa' },
-            ]}
+        {/* Stats with StatBar components */}
+        <GlassCard style={styles.statsCard}>
+          <StatBar
+            label="Score"
+            value={score}
+            color={designColors.NeonCyan}
           />
-        ))}
-      </View>
+          <View style={styles.statSpacer} />
+          <StatBar
+            label="Best"
+            value={highScore}
+            color={designColors.NeonCyan}
+          />
+        </GlassCard>
 
-      <View style={styles.controls}>
-        <TouchableOpacity onPress={() => changeDir('up')} disabled={gameOver || paused} style={[styles.arrow, styles.up, { backgroundColor: colors.cardBg }]}>
-          <Text style={[styles.arrowText, { color: colors.text }]}>↑</Text>
-        </TouchableOpacity>
-        <View style={styles.mid}>
-          <TouchableOpacity onPress={() => changeDir('left')} disabled={gameOver || paused} style={[styles.arrow, styles.side, { backgroundColor: colors.cardBg }]}>
-            <Text style={[styles.arrowText, { color: colors.text }]}>←</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={togglePause} disabled={gameOver} style={[styles.arrow, styles.side, { backgroundColor: colors.cardBg }]}>
-            <Text style={[styles.arrowText, { color: colors.text }]}>{paused ? '▶' : '⏸'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => changeDir('right')} disabled={gameOver || paused} style={[styles.arrow, styles.side, { backgroundColor: colors.cardBg }]}>
-            <Text style={[styles.arrowText, { color: colors.text }]}>→</Text>
-          </TouchableOpacity>
+        {/* Status messages */}
+        {paused && (
+          <GlassCard style={[styles.statusCard, { borderColor: designColors.NeonAmber }]}>
+            <Text style={styles.statusText}>⏸ Paused</Text>
+          </GlassCard>
+        )}
+        {gameOver && (
+          <GlassCard style={[styles.statusCard, { borderColor: designColors.Danger }]}>
+            <Text style={styles.statusText}>Game Over</Text>
+          </GlassCard>
+        )}
+
+        {/* Game board with glassmorphism and neon border */}
+        <GlassCard style={[styles.boardContainer, shadows.neonGlow]}>
+          <View style={[styles.board, { width: size, height: size }]}>
+            {/* Food with pulse animation */}
+            <Animated.View
+              style={[
+                styles.food,
+                {
+                  left: food.x * CELL,
+                  top: food.y * CELL,
+                  width: CELL - 2,
+                  height: CELL - 2,
+                  transform: [{ scale: foodPulseAnim }]
+                }
+              ]}
+            />
+            {/* Snake segments with gradient coloring */}
+            {snake.map((seg, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.seg,
+                  {
+                    left: seg.x * CELL,
+                    top: seg.y * CELL,
+                    width: CELL - 2,
+                    height: CELL - 2,
+                    backgroundColor: i === 0 ? gradients.snake[0] : gradients.snake[1],
+                    opacity: i === 0 ? 1 : 0.8
+                  }
+                ]}
+              />
+            ))}
+          </View>
+        </GlassCard>
+
+        {/* Control buttons using GradientButton */}
+        <View style={styles.controls}>
+          <GradientButton
+            gradient={gradients.snake}
+            label="↑"
+            onPress={() => changeDir('up')}
+            disabled={gameOver || paused}
+            style={styles.arrowUp}
+          />
+          <View style={styles.midRow}>
+            <GradientButton
+              gradient={gradients.snake}
+              label="←"
+              onPress={() => changeDir('left')}
+              disabled={gameOver || paused}
+              style={styles.arrowSide}
+            />
+            <GradientButton
+              gradient={gradients.snake}
+              label={paused ? '▶' : '⏸'}
+              onPress={togglePause}
+              disabled={gameOver}
+              style={styles.arrowSide}
+            />
+            <GradientButton
+              gradient={gradients.snake}
+              label="→"
+              onPress={() => changeDir('right')}
+              disabled={gameOver || paused}
+              style={styles.arrowSide}
+            />
+          </View>
+          <GradientButton
+            gradient={gradients.snake}
+            label="↓"
+            onPress={() => changeDir('down')}
+            disabled={gameOver || paused}
+            style={styles.arrowDown}
+          />
         </View>
-        <TouchableOpacity onPress={() => changeDir('down')} disabled={gameOver || paused} style={[styles.arrow, styles.down, { backgroundColor: colors.cardBg }]}>
-          <Text style={[styles.arrowText, { color: colors.text }]}>↓</Text>
-        </TouchableOpacity>
-      </View>
+      </Animated.View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12 },
-  btn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
-  btnText: { fontWeight: '600' },
-  title: { fontSize: 18, fontWeight: '700' },
-  info: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 10, marginHorizontal: 16, marginBottom: 8, borderRadius: 8, borderWidth: 1 },
-  infoText: { fontSize: 14, fontWeight: '600' },
-  pauseText: { fontWeight: '600' },
-  overText: { fontWeight: '600' },
-  board: { alignSelf: 'center', position: 'relative', borderRadius: 8, borderWidth: 1 },
-  food: { position: 'absolute', backgroundColor: '#ef4444', borderRadius: 4 },
-  seg: { position: 'absolute', borderRadius: 4 },
-  controls: { alignItems: 'center', marginTop: 16, paddingBottom: 24 },
-  arrow: { padding: 14, borderRadius: 10, minWidth: 56, alignItems: 'center' },
-  arrowText: { fontSize: 20, fontWeight: '700' },
-  up: { marginBottom: 4 },
-  mid: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  down: { marginTop: 4 },
-  side: { flex: 0 },
+  container: {
+    flex: 1,
+    backgroundColor: designColors.Background
+  },
+  content: {
+    padding: spacing.lg,
+    paddingBottom: 40
+  },
+  headerGradient: {
+    borderRadius: spacing.lg,
+    padding: 2,
+    marginBottom: spacing.md
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: designColors.Background,
+    borderRadius: spacing.lg,
+    padding: spacing.md
+  },
+  backButton: {
+    minHeight: 44,
+    minWidth: 80
+  },
+  resetButton: {
+    minHeight: 44,
+    minWidth: 100
+  },
+  title: {
+    fontSize: typography.fontSize.xl,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    color: designColors.TextPrimary,
+    textAlign: 'center'
+  },
+  statsCard: {
+    marginBottom: spacing.md
+  },
+  statSpacer: {
+    height: spacing.sm
+  },
+  statusCard: {
+    marginBottom: spacing.md,
+    borderWidth: 2,
+    alignItems: 'center'
+  },
+  statusText: {
+    textAlign: 'center',
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    color: designColors.TextPrimary
+  },
+  boardContainer: {
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+    borderWidth: 2,
+    borderColor: designColors.NeonCyan
+  },
+  board: {
+    position: 'relative',
+    borderRadius: spacing.md
+  },
+  food: {
+    position: 'absolute',
+    backgroundColor: designColors.NeonRed,
+    borderRadius: 4,
+    ...shadows.neonGlow
+  },
+  seg: {
+    position: 'absolute',
+    borderRadius: 4
+  },
+  controls: {
+    alignItems: 'center',
+    gap: spacing.sm
+  },
+  arrowUp: {
+    minHeight: 44,
+    minWidth: 60
+  },
+  midRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'center'
+  },
+  arrowSide: {
+    minHeight: 44,
+    minWidth: 60
+  },
+  arrowDown: {
+    minHeight: 44,
+    minWidth: 60
+  }
 })

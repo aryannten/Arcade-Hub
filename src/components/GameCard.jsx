@@ -1,87 +1,213 @@
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native'
+import React, { useRef, useEffect } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated } from 'react-native'
 import { MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons'
+import LinearGradient from 'react-native-linear-gradient'
+import GlassCard from '../design/components/GlassCard'
+import DifficultyBadge from '../design/components/DifficultyBadge'
+import { colors as designColors, gradients, spacing } from '../design/tokens'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2 // 2 cards per row with padding
 
-export default function GameCard({ title, description, iconName, iconFamily = 'MaterialCommunityIcons', difficulty = 'Medium', onPress, colors }) {
-  const diffColor =
-    difficulty.toLowerCase() === 'easy'
-      ? '#22c55e'
-      : difficulty.toLowerCase() === 'hard'
-        ? '#ef4444'
-        : '#f59e0b'
+// Map game titles to gradient keys
+const GAME_GRADIENT_MAP = {
+  'Memory Match': 'memoryMatch',
+  'Reaction Test': 'reactionTest',
+  'Number Guesser': 'numberGuesser',
+  'Rock Paper Scissors': 'rockPaperScissors',
+  'Tic Tac Toe': 'ticTacToe',
+  'Snake': 'snake',
+  'Infinite Racing': 'infiniteRacing',
+  'Flappy Bird': 'flappyBird',
+  'Breakout': 'breakout'
+}
+
+export default function GameCard({ 
+  title, 
+  description, 
+  iconName, 
+  iconFamily = 'MaterialCommunityIcons', 
+  difficulty = 'Medium', 
+  onPress, 
+  colors,
+  index = 0 
+}) {
+  const scaleAnim = useRef(new Animated.Value(1)).current
+  const fadeAnim = useRef(new Animated.Value(0)).current
+
+  // Staggered entry animation
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      delay: index * 50, // Stagger by 50ms per card
+      useNativeDriver: true
+    }).start()
+  }, [index])
 
   const IconComponent = 
     iconFamily === 'Ionicons' ? Ionicons :
     iconFamily === 'FontAwesome5' ? FontAwesome5 :
     MaterialCommunityIcons
 
+  // Get game-specific gradient
+  const gradientKey = GAME_GRADIENT_MAP[title]
+  const gameGradient = gradientKey ? gradients[gradientKey] : [designColors.NeonCyan, designColors.NeonPurple]
+
+  // Press animation
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true
+    }).start()
+  }
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 3,
+      tension: 40,
+      useNativeDriver: true
+    }).start()
+  }
+
+  const handlePress = () => {
+    // Animate then call onPress
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.92,
+        duration: 100,
+        useNativeDriver: true
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true
+      })
+    ]).start(() => {
+      if (onPress) onPress()
+    })
+  }
+
   return (
-    <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.border, width: CARD_WIDTH }]}
-      onPress={onPress}
-      activeOpacity={0.8}
+    <Animated.View 
+      style={[
+        styles.cardWrapper,
+        { 
+          width: CARD_WIDTH,
+          opacity: fadeAnim,
+          transform: [{ scale: scaleAnim }]
+        }
+      ]}
     >
-      <View style={styles.header}>
-        <View style={[styles.iconWrap, { backgroundColor: colors.primary + '25' }]}>
-          <IconComponent name={iconName} size={28} color={colors.primary} />
-        </View>
-        <View style={[styles.badge, { backgroundColor: diffColor }]}>
-          <Text style={styles.badgeText}>{difficulty}</Text>
-        </View>
-      </View>
-      <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{title}</Text>
-      <Text style={[styles.desc, { color: colors.textSecondary }]} numberOfLines={2}>
-        {description}
-      </Text>
-      <TouchableOpacity 
-        style={[styles.playBtn, { backgroundColor: colors.primary }]}
-        onPress={onPress}
+      <TouchableOpacity
+        onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
         activeOpacity={0.9}
+        style={styles.touchable}
       >
-        <Ionicons name="play" size={12} color="#fff" />
-        <Text style={styles.playLabel}>Play</Text>
+        <GlassCard style={styles.card}>
+          {/* Gradient accent border */}
+          <LinearGradient
+            colors={gameGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradientAccent}
+          />
+          
+          <View style={styles.header}>
+            {/* Icon with gradient background */}
+            <LinearGradient
+              colors={gameGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.iconWrap}
+            >
+              <IconComponent name={iconName} size={28} color="#fff" />
+            </LinearGradient>
+            
+            <DifficultyBadge difficulty={difficulty} size="small" />
+          </View>
+          
+          <Text style={[styles.title, { color: designColors.TextPrimary }]} numberOfLines={1}>
+            {title}
+          </Text>
+          <Text style={[styles.desc, { color: designColors.TextMuted }]} numberOfLines={2}>
+            {description}
+          </Text>
+          
+          {/* Play button with gradient */}
+          <LinearGradient
+            colors={gameGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.playBtn}
+          >
+            <Ionicons name="play" size={14} color="#fff" />
+            <Text style={styles.playLabel}>Play</Text>
+          </LinearGradient>
+        </GlassCard>
       </TouchableOpacity>
-    </TouchableOpacity>
+    </Animated.View>
   )
 }
 
 const styles = StyleSheet.create({
+  cardWrapper: {
+    marginBottom: spacing.md,
+  },
+  touchable: {
+    minWidth: 44,
+    minHeight: 44,
+  },
   card: {
-    borderRadius: 16,
-    padding: 12,
-    borderWidth: 1,
-    marginBottom: 12,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  gradientAccent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   iconWrap: {
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+  title: { 
+    fontSize: 15, 
+    fontWeight: '700', 
+    marginBottom: spacing.xs 
   },
-  badgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  title: { fontSize: 15, fontWeight: '700', marginBottom: 4 },
-  desc: { fontSize: 12, lineHeight: 16, marginBottom: 10, minHeight: 32 },
+  desc: { 
+    fontSize: 12, 
+    lineHeight: 16, 
+    marginBottom: spacing.sm, 
+    minHeight: 32 
+  },
   playBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: 12,
+    borderRadius: spacing.sm,
     gap: 6,
+    minHeight: 44, // Touch target requirement
   },
-  playLabel: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  playLabel: { 
+    color: '#fff', 
+    fontWeight: '700', 
+    fontSize: 13 
+  },
 })

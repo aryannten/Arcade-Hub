@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native'
+import LinearGradient from 'react-native-linear-gradient'
 import { storage } from '../utils/storage'
+import { colors as designColors, gradients, spacing, typography, shadows } from '../design/tokens'
+import GlassCard from '../design/components/GlassCard'
+import GradientButton from '../design/components/GradientButton'
+import StatBar from '../design/components/StatBar'
+import DifficultyBadge from '../design/components/DifficultyBadge'
 
 const DIFF = { easy: { pairs: 6, cols: 3 }, medium: { pairs: 8, cols: 4 }, hard: { pairs: 12, cols: 4 } }
 const EMOJIS = ['🎮', '🎯', '🎲', '🎪', '🎨', '🎭', '🎺', '🎸', '🎹', '🎤', '🎧', '🎬']
@@ -14,6 +20,10 @@ export default function MemoryGame({ onBack, colors }) {
   const [difficulty, setDifficulty] = useState('easy')
   const [timer, setTimer] = useState(0)
   const timerRef = useRef(null)
+  
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const pulseAnim = useRef(new Animated.Value(1)).current
 
   const init = (diff = difficulty) => {
     const { pairs } = DIFF[diff]
@@ -31,6 +41,12 @@ export default function MemoryGame({ onBack, colors }) {
 
   useEffect(() => {
     init()
+    // Entry animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true
+    }).start()
   }, [difficulty])
 
   useEffect(() => {
@@ -61,6 +77,21 @@ export default function MemoryGame({ onBack, colors }) {
     if (matched.length === cards.length && cards.length > 0) {
       setGameWon(true)
       storage.updateGameStats('memory', { gamesPlayed: 1, gamesWon: 1, score: moves })
+      // Win pulse animation
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.05,
+            duration: 300,
+            useNativeDriver: true
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true
+          })
+        ])
+      ).start()
     }
   }, [matched.length, cards.length, moves])
 
@@ -73,77 +104,195 @@ export default function MemoryGame({ onBack, colors }) {
   const { pairs, cols } = DIFF[difficulty]
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.bg }]} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={[styles.btn, { backgroundColor: colors.cardBg }]}>
-          <Text style={[styles.btnText, { color: colors.text }]}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Memory Match</Text>
-        <TouchableOpacity onPress={() => init()} style={[styles.btn, { backgroundColor: colors.primary }]}>
-          <Text style={styles.btnTextLight}>Restart</Text>
-        </TouchableOpacity>
-      </View>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Animated.View style={{ opacity: fadeAnim }}>
+        {/* Header with gradient accent */}
+        <LinearGradient
+          colors={gradients.memoryMatch}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.headerGradient}
+        >
+          <View style={styles.header}>
+            <GradientButton
+              gradient={gradients.memoryMatch}
+              label="← Back"
+              onPress={onBack}
+              style={styles.backButton}
+            />
+            <Text style={styles.title}>Memory Match</Text>
+            <GradientButton
+              gradient={gradients.memoryMatch}
+              label="Restart"
+              onPress={() => init()}
+              style={styles.restartButton}
+            />
+          </View>
+        </LinearGradient>
 
-      <View style={styles.diffRow}>
-        {Object.keys(DIFF).map((d) => (
-          <TouchableOpacity
-            key={d}
-            onPress={() => setDifficulty(d)}
-            style={[styles.diffBtn, { borderColor: colors.border }, difficulty === d && { backgroundColor: colors.primary }]}
-          >
-            <Text style={[styles.diffBtnText, { color: colors.text }]}>{d}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={[styles.info, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-        <Text style={[styles.infoText, { color: colors.text }]}>Moves: {moves}</Text>
-        <Text style={[styles.infoText, { color: colors.text }]}>Matches: {matched.length / 2} / {pairs}</Text>
-        <Text style={[styles.infoText, { color: colors.text }]}>
-          Time: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
-        </Text>
-      </View>
-
-      {gameWon && (
-        <View style={[styles.win, { backgroundColor: colors.success + '30', borderColor: colors.success }]}>
-          <Text style={[styles.winText, { color: colors.text }]}>🎉 You won in {moves} moves!</Text>
+        {/* Difficulty selector with badges */}
+        <View style={styles.diffRow}>
+          {Object.keys(DIFF).map((d) => (
+            <TouchableOpacity
+              key={d}
+              onPress={() => setDifficulty(d)}
+              style={[
+                styles.diffBtn,
+                difficulty === d && styles.diffBtnActive
+              ]}
+            >
+              <DifficultyBadge difficulty={d} size="small" />
+            </TouchableOpacity>
+          ))}
         </View>
-      )}
 
-      <View style={[styles.grid, { maxWidth: cols * 76 }]}>
-        {cards.map((c) => (
-          <TouchableOpacity
-            key={c.id}
-            onPress={() => tap(c.id)}
-            style={[
-              styles.card,
-              { backgroundColor: visible(c.id) ? colors.primary + '40' : colors.cardBg, borderColor: colors.border },
-            ]}
-          >
-            <Text style={styles.cardEmoji}>{visible(c.id) ? c.emoji : '?'}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+        {/* Stats with StatBar components */}
+        <GlassCard style={styles.statsCard}>
+          <StatBar
+            label="Moves"
+            value={moves}
+            color={designColors.NeonPurple}
+          />
+          <View style={styles.statSpacer} />
+          <StatBar
+            label="Matches"
+            value={`${matched.length / 2} / ${pairs}`}
+            color={designColors.NeonPurple}
+          />
+          <View style={styles.statSpacer} />
+          <StatBar
+            label="Time"
+            value={`${Math.floor(timer / 60)}:${(timer % 60).toString().padStart(2, '0')}`}
+            color={designColors.NeonPurple}
+          />
+        </GlassCard>
+
+        {/* Win message with pulse animation */}
+        {gameWon && (
+          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+            <GlassCard style={[styles.winCard, shadows.neonGlowPurple]}>
+              <Text style={styles.winText}>🎉 You won in {moves} moves!</Text>
+            </GlassCard>
+          </Animated.View>
+        )}
+
+        {/* Game grid with glassmorphism cards */}
+        <View style={[styles.grid, { maxWidth: cols * 76 }]}>
+          {cards.map((c) => (
+            <TouchableOpacity
+              key={c.id}
+              onPress={() => tap(c.id)}
+              style={styles.cardTouchable}
+            >
+              <GlassCard
+                style={[
+                  styles.card,
+                  visible(c.id) && styles.cardFlipped
+                ]}
+              >
+                <Text style={styles.cardEmoji}>{visible(c.id) ? c.emoji : '?'}</Text>
+              </GlassCard>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Animated.View>
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  btn: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10 },
-  btnText: { fontWeight: '600' },
-  btnTextLight: { color: '#fff', fontWeight: '600' },
-  title: { fontSize: 18, fontWeight: '700' },
-  diffRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  diffBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1 },
-  diffBtnText: { fontSize: 13 },
-  info: { flexDirection: 'row', justifyContent: 'space-around', padding: 12, borderRadius: 10, borderWidth: 1, marginBottom: 12 },
-  infoText: { fontSize: 14 },
-  win: { padding: 12, borderRadius: 10, borderWidth: 1, marginBottom: 12 },
-  winText: { textAlign: 'center', fontWeight: '600' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignSelf: 'center' },
-  card: { width: 68, height: 68, borderRadius: 10, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
-  cardEmoji: { fontSize: 28 },
+  container: {
+    flex: 1,
+    backgroundColor: designColors.Background
+  },
+  content: {
+    padding: spacing.lg,
+    paddingBottom: 40
+  },
+  headerGradient: {
+    borderRadius: spacing.lg,
+    padding: 2,
+    marginBottom: spacing.md
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: designColors.Background,
+    borderRadius: spacing.lg,
+    padding: spacing.md
+  },
+  backButton: {
+    minHeight: 44,
+    minWidth: 80
+  },
+  restartButton: {
+    minHeight: 44,
+    minWidth: 100
+  },
+  title: {
+    fontSize: typography.fontSize.xl,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    color: designColors.TextPrimary,
+    textAlign: 'center'
+  },
+  diffRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    justifyContent: 'center'
+  },
+  diffBtn: {
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: spacing.sm
+  },
+  diffBtnActive: {
+    ...shadows.neonGlowPurple
+  },
+  statsCard: {
+    marginBottom: spacing.md
+  },
+  statSpacer: {
+    height: spacing.sm
+  },
+  winCard: {
+    marginBottom: spacing.md,
+    backgroundColor: designColors.Success + '20',
+    borderColor: designColors.Success,
+    borderWidth: 1
+  },
+  winText: {
+    textAlign: 'center',
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    color: designColors.TextPrimary
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    alignSelf: 'center'
+  },
+  cardTouchable: {
+    minHeight: 68,
+    minWidth: 68
+  },
+  card: {
+    width: 68,
+    height: 68,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  cardFlipped: {
+    backgroundColor: designColors.NeonPurple + '40',
+    ...shadows.neonGlowPurple
+  },
+  cardEmoji: {
+    fontSize: 28
+  }
 })

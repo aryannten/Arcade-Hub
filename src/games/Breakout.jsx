@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, PanResponder } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, PanResponder, Animated } from 'react-native'
+import LinearGradient from 'react-native-linear-gradient'
 import { storage } from '../utils/storage'
 import { soundManager } from '../utils/sounds'
+import { colors, gradients, spacing, typography } from '../design/tokens'
+import GlassCard from '../design/components/GlassCard'
+import StatBar from '../design/components/StatBar'
+import GradientButton from '../design/components/GradientButton'
+import NeonText from '../design/components/NeonText'
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window')
 const W = SCREEN_W - 32
@@ -23,6 +29,7 @@ function makeBricks() {
         x: 10 + c * (BRICK_W + 4),
         y: 50 + r * (BRICK_H + 4),
         hit: false,
+        fadeAnim: new Animated.Value(1), // Add fade animation value
       })
     }
   }
@@ -104,6 +111,12 @@ export default function Breakout({ onBack, colors }) {
           for (const brick of br) {
             if (brick.hit) continue
             if (!hitRect(b, brick.x, brick.y, BRICK_W, BRICK_H)) continue
+            // Trigger fade-out animation
+            Animated.timing(brick.fadeAnim, {
+              toValue: 0,
+              duration: 300,
+              useNativeDriver: true
+            }).start()
             next = br.map((x) => (x.id === brick.id ? { ...x, hit: true } : x))
             setScore((s) => s + 10)
             soundManager.playSuccess()
@@ -179,88 +192,222 @@ export default function Breakout({ onBack, colors }) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={[styles.btn, { backgroundColor: colors.cardBg }]}>
-          <Text style={[styles.btnText, { color: colors.text }]}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Breakout</Text>
-        <TouchableOpacity onPress={reset} style={[styles.btn, { backgroundColor: colors.cardBg }]}>
-          <Text style={[styles.btnText, { color: colors.text }]}>Reset</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={[styles.info, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-        <Text style={[styles.infoText, { color: colors.text }]}>Score: {score}</Text>
-        <Text style={[styles.infoText, { color: colors.text }]}>Best: {highScore}</Text>
-        <Text style={[styles.infoText, { color: colors.text }]}>Lives: {lives}</Text>
-        {gameOver && <Text style={[styles.over, { color: colors.error }]}>Game Over</Text>}
-        {won && <Text style={[styles.won, { color: colors.success }]}>🎉 You Won!</Text>}
-        {!started && !gameOver && !won && (
-          <Text style={[styles.hint, { color: colors.textSecondary }]}>Drag paddle, tap to launch</Text>
-        )}
-      </View>
-
-      {!started && !gameOver && !won && (
-        <TouchableOpacity
-          onPress={startGame}
-          style={[styles.launchBtn, { backgroundColor: colors.primary }]}
-        >
-          <Text style={styles.launchBtnText}>Tap to launch ball</Text>
-        </TouchableOpacity>
-      )}
-      <View
-        style={[styles.area, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
-        {...pan.panHandlers}
+    <View style={styles.container}>
+      {/* Header with gradient accent */}
+      <LinearGradient
+        colors={gradients.breakout}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.headerGradient}
       >
-        {bricks.map((b) =>
-          !b.hit ? (
-            <View
-              key={b.id}
-              style={[styles.brick, { left: b.x, top: b.y, width: BRICK_W, height: BRICK_H, backgroundColor: colors.primary }]}
-            />
-          ) : null
-        )}
+        <View style={styles.header}>
+          <GradientButton
+            gradient={gradients.breakout}
+            label="← Back"
+            onPress={onBack}
+            style={styles.backButton}
+          />
+          <NeonText color="#EC4899" size={24}>
+            Breakout
+          </NeonText>
+          <GradientButton
+            gradient={gradients.breakout}
+            label="Reset"
+            onPress={reset}
+            style={styles.resetButton}
+          />
+        </View>
+      </LinearGradient>
+
+      {/* Stats display using StatBar */}
+      <View style={styles.statsContainer}>
+        <StatBar label="Score" value={score} color="#EC4899" />
+        <StatBar label="Best" value={highScore} color="#EC4899" />
+        <StatBar label="Lives" value={lives} color="#EC4899" />
+      </View>
+
+      {/* Game status messages */}
+      {gameOver && (
+        <View style={styles.messageContainer}>
+          <NeonText color={colors.Danger} size={20}>Game Over</NeonText>
+        </View>
+      )}
+      {won && (
+        <View style={styles.messageContainer}>
+          <NeonText color={colors.Success} size={20}>🎉 You Won!</NeonText>
+        </View>
+      )}
+      {!started && !gameOver && !won && (
+        <View style={styles.messageContainer}>
+          <Text style={styles.hint}>Drag paddle, tap to launch</Text>
+        </View>
+      )}
+
+      {/* Launch button */}
+      {!started && !gameOver && !won && (
+        <View style={styles.launchContainer}>
+          <GradientButton
+            gradient={gradients.breakout}
+            label="Tap to launch ball"
+            onPress={startGame}
+          />
+        </View>
+      )}
+
+      {/* Game area with glassmorphism */}
+      <GlassCard style={styles.gameArea}>
         <View
-          style={[
-            styles.paddle,
-            {
-              left: paddleX,
-              top: H - PADDLE_H - 10,
-              width: PADDLE_W,
-              height: PADDLE_H,
-              backgroundColor: colors.primary,
-            },
-          ]}
-        />
-        {started && (
+          style={styles.playArea}
+          {...pan.panHandlers}
+        >
+          {/* Render bricks with gradient and neon borders */}
+          {bricks.map((b) => (
+            <Animated.View
+              key={b.id}
+              style={[
+                styles.brickContainer,
+                {
+                  left: b.x,
+                  top: b.y,
+                  width: BRICK_W,
+                  height: BRICK_H,
+                  opacity: b.fadeAnim
+                }
+              ]}
+            >
+              <LinearGradient
+                colors={gradients.breakout}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.brick}
+              />
+            </Animated.View>
+          ))}
+
+          {/* Paddle with gradient styling */}
           <View
             style={[
-              styles.ball,
-              { left: ball.x, top: ball.y, width: BALL, height: BALL, backgroundColor: colors.text },
+              styles.paddleContainer,
+              {
+                left: paddleX,
+                top: H - PADDLE_H - 10,
+                width: PADDLE_W,
+                height: PADDLE_H,
+              },
             ]}
-          />
-        )}
-      </View>
+          >
+            <LinearGradient
+              colors={gradients.breakout}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.paddle}
+            />
+          </View>
+
+          {/* Ball */}
+          {started && (
+            <View
+              style={[
+                styles.ball,
+                { left: ball.x, top: ball.y, width: BALL, height: BALL },
+              ]}
+            />
+          )}
+        </View>
+      </GlassCard>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12 },
-  btn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
-  btnText: { fontWeight: '600' },
-  title: { fontSize: 18, fontWeight: '700' },
-  info: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 10, marginHorizontal: 16, marginBottom: 8, borderRadius: 8, borderWidth: 1 },
-  infoText: { fontSize: 14, fontWeight: '600' },
-  over: { fontWeight: '600' },
-  won: { fontWeight: '600' },
-  hint: { fontSize: 13 },
-  launchBtn: { marginHorizontal: 16, marginBottom: 8, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
-  launchBtnText: { color: '#fff', fontWeight: '600' },
-  area: { flex: 1, marginHorizontal: 16, borderRadius: 12, borderWidth: 1, position: 'relative', overflow: 'hidden' },
-  brick: { position: 'absolute', borderRadius: 4 },
-  paddle: { position: 'absolute', borderRadius: 6 },
-  ball: { position: 'absolute', borderRadius: BALL / 2 },
+  container: {
+    flex: 1,
+    backgroundColor: colors.Background
+  },
+  headerGradient: {
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg
+  },
+  backButton: {
+    minWidth: 80
+  },
+  resetButton: {
+    minWidth: 80
+  },
+  statsContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    gap: spacing.sm
+  },
+  messageContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.md
+  },
+  hint: {
+    color: colors.TextMuted,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.body
+  },
+  launchContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md
+  },
+  gameArea: {
+    flex: 1,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    padding: 0
+  },
+  playArea: {
+    flex: 1,
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: spacing.md
+  },
+  brickContainer: {
+    position: 'absolute',
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#EC4899',
+    shadowColor: '#EC4899',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+    elevation: 4
+  },
+  brick: {
+    flex: 1,
+    borderRadius: 2
+  },
+  paddleContainer: {
+    position: 'absolute',
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#EC4899',
+    shadowColor: '#EC4899',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    elevation: 6
+  },
+  paddle: {
+    flex: 1,
+    borderRadius: 4
+  },
+  ball: {
+    position: 'absolute',
+    borderRadius: BALL / 2,
+    backgroundColor: colors.TextPrimary,
+    shadowColor: colors.NeonCyan,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
+    elevation: 5
+  }
 })

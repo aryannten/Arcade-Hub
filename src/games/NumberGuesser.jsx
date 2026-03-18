@@ -1,6 +1,11 @@
-import { useState, useEffect } from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
+import { useState, useEffect, useRef } from 'react'
+import { View, Text, TextInput, StyleSheet, ScrollView, Animated } from 'react-native'
+import LinearGradient from 'react-native-linear-gradient'
 import { storage } from '../utils/storage'
+import { colors as designColors, gradients, spacing, typography, shadows } from '../design/tokens'
+import GlassCard from '../design/components/GlassCard'
+import GradientButton from '../design/components/GradientButton'
+import StatBar from '../design/components/StatBar'
 
 export default function NumberGuesser({ onBack, colors }) {
   const [targetNumber, setTargetNumber] = useState(0)
@@ -10,6 +15,11 @@ export default function NumberGuesser({ onBack, colors }) {
   const [gameWon, setGameWon] = useState(false)
   const [range, setRange] = useState({ min: 1, max: 100 })
   const [guessHistory, setGuessHistory] = useState([])
+  
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const slideAnim = useRef(new Animated.Value(-20)).current
+  const pulseAnim = useRef(new Animated.Value(1)).current
 
   const startNewGame = () => {
     const newTarget = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min
@@ -23,12 +33,26 @@ export default function NumberGuesser({ onBack, colors }) {
 
   useEffect(() => {
     startNewGame()
+    // Entry animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true
+    }).start()
   }, [])
 
   const handleGuess = () => {
     const numGuess = parseInt(guess, 10)
     if (isNaN(numGuess) || numGuess < range.min || numGuess > range.max) {
       setMessage(`Please enter a valid number between ${range.min} and ${range.max}`)
+      // Feedback slide-in animation
+      Animated.sequence([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true
+        })
+      ]).start()
       return
     }
     const newAttempts = attempts + 1
@@ -43,11 +67,41 @@ export default function NumberGuesser({ onBack, colors }) {
         gamesWon: 1,
         minAttempts: newAttempts,
       })
+      // Success pulse animation
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.05,
+            duration: 300,
+            useNativeDriver: true
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true
+          })
+        ])
+      ).start()
     } else if (numGuess < targetNumber) {
       setMessage('Too low! Try a higher number.')
     } else {
       setMessage('Too high! Try a lower number.')
     }
+    
+    // Feedback slide-in animation
+    Animated.sequence([
+      Animated.timing(slideAnim, {
+        toValue: -20,
+        duration: 0,
+        useNativeDriver: true
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true
+      })
+    ]).start()
+    
     setGuess('')
   }
 
@@ -63,102 +117,242 @@ export default function NumberGuesser({ onBack, colors }) {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.bg }]} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={[styles.btn, { backgroundColor: colors.cardBg }]}>
-          <Text style={[styles.btnText, { color: colors.text }]}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Number Guesser</Text>
-        <TouchableOpacity onPress={startNewGame} style={[styles.btn, { backgroundColor: colors.primary }]}>
-          <Text style={styles.btnTextLight}>New Game</Text>
-        </TouchableOpacity>
-      </View>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Animated.View style={{ opacity: fadeAnim }}>
+        {/* Header with gradient accent */}
+        <LinearGradient
+          colors={gradients.numberGuesser}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.headerGradient}
+        >
+          <View style={styles.header}>
+            <GradientButton
+              gradient={gradients.numberGuesser}
+              label="← Back"
+              onPress={onBack}
+              style={styles.backButton}
+            />
+            <Text style={styles.title}>Number Guesser</Text>
+            <GradientButton
+              gradient={gradients.numberGuesser}
+              label="New Game"
+              onPress={startNewGame}
+              style={styles.restartButton}
+            />
+          </View>
+        </LinearGradient>
 
-      <View style={styles.diff}>
-        <Text style={[styles.label, { color: colors.text }]}>Difficulty:</Text>
-        <View style={styles.diffRow}>
-          {[
-            { min: 1, max: 10, label: 'Easy (1-10)' },
-            { min: 1, max: 50, label: 'Medium (1-50)' },
-            { min: 1, max: 100, label: 'Hard (1-100)' },
-          ].map((r) => (
-            <TouchableOpacity
-              key={r.max}
-              onPress={() => handleRangeChange(r)}
-              style={[
-                styles.diffBtn,
-                { borderColor: colors.border },
-                range.max === r.max && { backgroundColor: colors.primary, borderColor: colors.primary },
-              ]}
-            >
-              <Text style={[styles.diffBtnText, { color: colors.text }]}>{r.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      <View style={[styles.info, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-        <Text style={[styles.infoText, { color: colors.text }]}>Range: {range.min} – {range.max}</Text>
-        <Text style={[styles.infoText, { color: colors.text }]}>Attempts: {attempts}</Text>
-      </View>
-
-      <Text style={[styles.message, { color: colors.text }]}>{message}</Text>
-
-      {!gameWon && (
-        <View style={styles.inputRow}>
-          <TextInput
-            style={[styles.input, { backgroundColor: colors.cardBg, borderColor: colors.border, color: colors.text }]}
-            value={guess}
-            onChangeText={setGuess}
-            placeholder="Your guess"
-            placeholderTextColor={colors.textSecondary}
-            keyboardType="number-pad"
-          />
-          <TouchableOpacity
-            onPress={handleGuess}
-            disabled={!guess.trim()}
-            style={[styles.guessBtn, { backgroundColor: colors.primary }]}
-          >
-            <Text style={styles.btnTextLight}>Guess!</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {guessHistory.length > 0 && (
-        <View style={[styles.history, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-          <Text style={[styles.historyTitle, { color: colors.text }]}>Your guesses:</Text>
-          <View style={styles.historyList}>
-            {guessHistory.map((item, i) => (
-              <Text key={i} style={[styles.historyItem, { color: colors.textSecondary }]}>{item.guess}</Text>
+        {/* Difficulty selector */}
+        <GlassCard style={styles.diffCard}>
+          <Text style={styles.diffLabel}>Difficulty:</Text>
+          <View style={styles.diffRow}>
+            {[
+              { min: 1, max: 10, label: 'Easy (1-10)' },
+              { min: 1, max: 50, label: 'Medium (1-50)' },
+              { min: 1, max: 100, label: 'Hard (1-100)' },
+            ].map((r) => (
+              <GradientButton
+                key={r.max}
+                gradient={range.max === r.max ? gradients.numberGuesser : [designColors.Surface, designColors.Surface]}
+                label={r.label}
+                onPress={() => handleRangeChange(r)}
+                style={styles.diffBtn}
+              />
             ))}
           </View>
-        </View>
-      )}
+        </GlassCard>
+
+        {/* Stats with StatBar component */}
+        <GlassCard style={styles.statsCard}>
+          <StatBar
+            label="Attempts"
+            value={attempts}
+            color={designColors.NeonCyan}
+          />
+        </GlassCard>
+
+        {/* Feedback message with slide-in animation */}
+        <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
+          <GlassCard style={styles.messageCard}>
+            <Text style={styles.message}>{message}</Text>
+          </GlassCard>
+        </Animated.View>
+
+        {/* Win message with pulse animation */}
+        {gameWon && (
+          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+            <GlassCard style={[styles.winCard, shadows.neonGlow]}>
+              <Text style={styles.winText}>🎉 You got it in {attempts} attempts!</Text>
+            </GlassCard>
+          </Animated.View>
+        )}
+
+        {/* Input field with glassmorphism styling */}
+        {!gameWon && (
+          <GlassCard style={styles.inputCard}>
+            <TextInput
+              style={styles.input}
+              value={guess}
+              onChangeText={setGuess}
+              placeholder="Your guess"
+              placeholderTextColor={designColors.TextMuted}
+              keyboardType="number-pad"
+            />
+            <GradientButton
+              gradient={gradients.numberGuesser}
+              label="Guess!"
+              onPress={handleGuess}
+              disabled={!guess.trim()}
+              style={styles.guessBtn}
+            />
+          </GlassCard>
+        )}
+
+        {/* Guess history */}
+        {guessHistory.length > 0 && (
+          <GlassCard style={styles.history}>
+            <Text style={styles.historyTitle}>Your guesses:</Text>
+            <View style={styles.historyList}>
+              {guessHistory.map((item, i) => (
+                <View key={i} style={styles.historyItem}>
+                  <Text style={styles.historyItemText}>{item.guess}</Text>
+                </View>
+              ))}
+            </View>
+          </GlassCard>
+        )}
+      </Animated.View>
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  btn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
-  btnText: { fontWeight: '600' },
-  btnTextLight: { color: '#fff', fontWeight: '600' },
-  title: { fontSize: 18, fontWeight: '700' },
-  diff: { marginBottom: 16 },
-  label: { fontSize: 14, marginBottom: 8, fontWeight: '600' },
-  diffRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  diffBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1 },
-  diffBtnText: { fontSize: 13 },
-  info: { padding: 12, borderRadius: 10, borderWidth: 1, marginBottom: 16 },
-  infoText: { fontSize: 14 },
-  message: { fontSize: 16, marginBottom: 16, textAlign: 'center' },
-  inputRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  input: { flex: 1, borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
-  guessBtn: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10, justifyContent: 'center' },
-  history: { padding: 12, borderRadius: 10, borderWidth: 1 },
-  historyTitle: { fontWeight: '600', marginBottom: 8 },
-  historyList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  historyItem: { fontSize: 14 },
+  container: {
+    flex: 1,
+    backgroundColor: designColors.Background
+  },
+  content: {
+    padding: spacing.lg,
+    paddingBottom: 40
+  },
+  headerGradient: {
+    borderRadius: spacing.lg,
+    padding: 2,
+    marginBottom: spacing.md
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: designColors.Background,
+    borderRadius: spacing.lg,
+    padding: spacing.md
+  },
+  backButton: {
+    minHeight: 44,
+    minWidth: 80
+  },
+  restartButton: {
+    minHeight: 44,
+    minWidth: 100
+  },
+  title: {
+    fontSize: typography.fontSize.xl,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    color: designColors.TextPrimary,
+    textAlign: 'center'
+  },
+  diffCard: {
+    marginBottom: spacing.md
+  },
+  diffLabel: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.body,
+    color: designColors.TextMuted,
+    marginBottom: spacing.sm
+  },
+  diffRow: {
+    gap: spacing.sm
+  },
+  diffBtn: {
+    minHeight: 44
+  },
+  statsCard: {
+    marginBottom: spacing.md
+  },
+  messageCard: {
+    marginBottom: spacing.md
+  },
+  message: {
+    textAlign: 'center',
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.body,
+    color: designColors.TextPrimary
+  },
+  winCard: {
+    marginBottom: spacing.md,
+    backgroundColor: designColors.Success + '20',
+    borderColor: designColors.Success,
+    borderWidth: 1
+  },
+  winText: {
+    textAlign: 'center',
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    color: designColors.TextPrimary
+  },
+  inputCard: {
+    marginBottom: spacing.md
+  },
+  input: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.body,
+    color: designColors.TextPrimary,
+    backgroundColor: designColors.Surface,
+    borderWidth: 1,
+    borderColor: designColors.SurfaceBorder,
+    borderRadius: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+    minHeight: 48
+  },
+  guessBtn: {
+    minHeight: 48
+  },
+  history: {
+    marginTop: spacing.md
+  },
+  historyTitle: {
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    fontSize: typography.fontSize.sm,
+    color: designColors.TextPrimary,
+    marginBottom: spacing.sm
+  },
+  historyList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm
+  },
+  historyItem: {
+    backgroundColor: designColors.Surface,
+    borderWidth: 1,
+    borderColor: designColors.SurfaceBorder,
+    borderRadius: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    minHeight: 32,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  historyItemText: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.body,
+    color: designColors.TextMuted
+  }
 })

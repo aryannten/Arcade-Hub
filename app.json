@@ -4,7 +4,7 @@
     "slug": "mini-games-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/app-icon.png",
+    "icon": "./assets/app-icon2.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -18,13 +18,13 @@
     "android": {
       "package": "com.arcadehub.minigames",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/app-icon.png",
+        "foregroundImage": "./assets/app-icon2.png",
         "backgroundColor": "#0a1628"
       },
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/app-icon.png"
+      "favicon": "./assets/app-icon2.png"
     },
     "extra": {
       "eas": {

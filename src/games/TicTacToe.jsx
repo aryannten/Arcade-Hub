@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native'
+import LinearGradient from 'react-native-linear-gradient'
 import { storage } from '../utils/storage'
 import { soundManager } from '../utils/sounds'
+import { colors as designColors, gradients, spacing, typography, shadows } from '../design/tokens'
+import GlassCard from '../design/components/GlassCard'
+import GradientButton from '../design/components/GradientButton'
+import NeonText from '../design/components/NeonText'
 
 const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
 
@@ -49,6 +54,11 @@ export default function TicTacToe({ onBack, colors }) {
   const [draws, setDraws] = useState(0)
   const drawRef = useRef(false)
 
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const cellScaleAnims = useRef(Array(9).fill(null).map(() => new Animated.Value(1))).current
+  const winPulseAnim = useRef(new Animated.Value(1)).current
+
   const isDraw = !winner && board.every((c) => c != null)
 
   useEffect(() => {
@@ -59,6 +69,37 @@ export default function TicTacToe({ onBack, colors }) {
     }
     if (winner || !isDraw) drawRef.current = false
   }, [isDraw, winner])
+
+  // Entry animation
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true
+    }).start()
+  }, [mode])
+
+  // Winning cells pulse animation
+  useEffect(() => {
+    if (winner) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(winPulseAnim, {
+            toValue: 1.1,
+            duration: 300,
+            useNativeDriver: true
+          }),
+          Animated.timing(winPulseAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true
+          })
+        ])
+      ).start()
+    } else {
+      winPulseAnim.setValue(1)
+    }
+  }, [winner])
 
   useEffect(() => {
     if (mode !== 'computer' || isXNext || winner || thinking) return
@@ -86,6 +127,21 @@ export default function TicTacToe({ onBack, colors }) {
 
   const play = (i) => {
     if (board[i] || winner || thinking) return
+    
+    // Cell tap scale animation
+    Animated.sequence([
+      Animated.timing(cellScaleAnims[i], {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true
+      }),
+      Animated.timing(cellScaleAnims[i], {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true
+      })
+    ]).start()
+
     const next = [...board]
     next[i] = isXNext ? 'X' : 'O'
     setBoard(next)
@@ -112,6 +168,8 @@ export default function TicTacToe({ onBack, colors }) {
     setWinner(null)
     setThinking(false)
     drawRef.current = false
+    // Reset cell animations
+    cellScaleAnims.forEach(anim => anim.setValue(1))
   }
 
   const newRound = () => reset()
@@ -129,32 +187,57 @@ export default function TicTacToe({ onBack, colors }) {
 
   if (mode === 'select') {
     return (
-      <View style={[styles.container, { backgroundColor: colors.bg }]}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={[styles.btn, { backgroundColor: colors.cardBg }]}>
-            <Text style={[styles.btnText, { color: colors.text }]}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.text }]}>Tic Tac Toe</Text>
-          <View style={styles.placeholder} />
-        </View>
-        <Text style={[styles.subtitle, { color: colors.text }]}>Choose mode</Text>
-        <View style={styles.modeRow}>
-          <TouchableOpacity
-            onPress={() => start('computer')}
-            style={[styles.modeBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <Animated.View style={{ opacity: fadeAnim }}>
+          {/* Header with gradient accent */}
+          <LinearGradient
+            colors={gradients.ticTacToe}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.headerGradient}
           >
-            <Text style={styles.modeEmoji}>🤖</Text>
-            <Text style={[styles.modeTitle, { color: colors.text }]}>vs Computer</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => start('player')}
-            style={[styles.modeBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
+            <View style={styles.header}>
+              <GradientButton
+                gradient={gradients.ticTacToe}
+                label="← Back"
+                onPress={onBack}
+                style={styles.backButton}
+              />
+              <Text style={styles.title}>Tic Tac Toe</Text>
+              <View style={styles.placeholder} />
+            </View>
+          </LinearGradient>
+
+          <NeonText 
+            color={designColors.NeonRed} 
+            size={18} 
+            style={styles.subtitle}
           >
-            <Text style={styles.modeEmoji}>👥</Text>
-            <Text style={[styles.modeTitle, { color: colors.text }]}>vs Player</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+            Choose mode
+          </NeonText>
+
+          <View style={styles.modeRow}>
+            <TouchableOpacity
+              onPress={() => start('computer')}
+              style={styles.modeTouchable}
+            >
+              <GlassCard style={styles.modeCard}>
+                <Text style={styles.modeEmoji}>🤖</Text>
+                <Text style={styles.modeTitle}>vs Computer</Text>
+              </GlassCard>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => start('player')}
+              style={styles.modeTouchable}
+            >
+              <GlassCard style={styles.modeCard}>
+                <Text style={styles.modeEmoji}>👥</Text>
+                <Text style={styles.modeTitle}>vs Player</Text>
+              </GlassCard>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </ScrollView>
     )
   }
 
@@ -168,80 +251,256 @@ export default function TicTacToe({ onBack, colors }) {
         ? 'Thinking...'
         : isXNext ? (mode === 'computer' ? 'Your turn (X)' : 'Player 1 (X)') : (mode === 'computer' ? "Computer's turn (O)" : 'Player 2 (O)')
 
+  // Find winning line for animation
+  const getWinningLine = () => {
+    if (!winner) return []
+    for (const [a, b, c] of LINES) {
+      if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+        return [a, b, c]
+      }
+    }
+    return []
+  }
+  const winningLine = getWinningLine()
+
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.bg }]} contentContainerStyle={styles.gameContent}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => setMode('select')} style={[styles.btn, { backgroundColor: colors.cardBg }]}>
-          <Text style={[styles.btnText, { color: colors.text }]}>← Mode</Text>
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
-          Tic Tac Toe · {mode === 'computer' ? 'vs Computer' : 'vs Player'}
-        </Text>
-        <View style={styles.headerRight}>
-          <TouchableOpacity onPress={newRound} style={[styles.smBtn, { backgroundColor: colors.cardBg }]}>
-            <Text style={[styles.btnText, { color: colors.text }]}>New</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={resetScore} style={[styles.smBtn, { backgroundColor: colors.cardBg }]}>
-            <Text style={[styles.btnText, { color: colors.text }]}>Reset</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+    <ScrollView style={styles.container} contentContainerStyle={styles.gameContent}>
+      <Animated.View style={{ opacity: fadeAnim }}>
+        {/* Header with gradient accent */}
+        <LinearGradient
+          colors={gradients.ticTacToe}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.headerGradient}
+        >
+          <View style={styles.header}>
+            <GradientButton
+              gradient={gradients.ticTacToe}
+              label="← Mode"
+              onPress={() => setMode('select')}
+              style={styles.backButton}
+            />
+            <Text style={styles.title} numberOfLines={1}>
+              Tic Tac Toe · {mode === 'computer' ? 'vs Computer' : 'vs Player'}
+            </Text>
+            <View style={styles.headerRight}>
+              <GradientButton
+                gradient={gradients.ticTacToe}
+                label="New"
+                onPress={newRound}
+                style={styles.smallButton}
+              />
+              <GradientButton
+                gradient={gradients.ticTacToe}
+                label="Reset"
+                onPress={resetScore}
+                style={styles.smallButton}
+              />
+            </View>
+          </View>
+        </LinearGradient>
 
-      <View style={[styles.scores, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-        <View style={styles.scoreItem}>
-          <Text style={[styles.scoreLabel, { color: colors.textSecondary }]}>{mode === 'computer' ? 'You' : 'P1'}</Text>
-          <Text style={[styles.scoreVal, { color: colors.text }]}>{xWins}</Text>
-        </View>
-        <View style={styles.scoreItem}>
-          <Text style={[styles.scoreLabel, { color: colors.textSecondary }]}>Draws</Text>
-          <Text style={[styles.scoreVal, { color: colors.text }]}>{draws}</Text>
-        </View>
-        <View style={styles.scoreItem}>
-          <Text style={[styles.scoreLabel, { color: colors.textSecondary }]}>{mode === 'computer' ? 'Computer' : 'P2'}</Text>
-          <Text style={[styles.scoreVal, { color: colors.text }]}>{oWins}</Text>
-        </View>
-      </View>
+        {/* Scores with glassmorphism */}
+        <GlassCard style={styles.scoresCard}>
+          <View style={styles.scoreItem}>
+            <Text style={styles.scoreLabel}>{mode === 'computer' ? 'You' : 'P1'}</Text>
+            <Text style={styles.scoreVal}>{xWins}</Text>
+          </View>
+          <View style={styles.scoreItem}>
+            <Text style={styles.scoreLabel}>Draws</Text>
+            <Text style={styles.scoreVal}>{draws}</Text>
+          </View>
+          <View style={styles.scoreItem}>
+            <Text style={styles.scoreLabel}>{mode === 'computer' ? 'Computer' : 'P2'}</Text>
+            <Text style={styles.scoreVal}>{oWins}</Text>
+          </View>
+        </GlassCard>
 
-      <Text style={[styles.status, { color: colors.text }]}>{status}</Text>
+        {/* Current player with NeonText */}
+        <NeonText 
+          color={designColors.NeonRed} 
+          size={18} 
+          style={styles.status}
+        >
+          {status}
+        </NeonText>
 
-      <View style={[styles.board, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-        {board.map((cell, i) => (
-          <TouchableOpacity
-            key={i}
-            onPress={() => play(i)}
-            disabled={!!cell || !!winner || thinking}
-            style={[styles.cell, { borderColor: colors.border }]}
-          >
-            <Text style={[styles.cellText, { color: colors.text }]}>{cell}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+        {/* Game board with glassmorphism cells */}
+        <GlassCard style={styles.boardContainer}>
+          <View style={styles.board}>
+            {board.map((cell, i) => {
+              const isWinningCell = winningLine.includes(i)
+              return (
+                <TouchableOpacity
+                  key={i}
+                  onPress={() => play(i)}
+                  disabled={!!cell || !!winner || thinking}
+                  style={styles.cellTouchable}
+                >
+                  <Animated.View
+                    style={{
+                      transform: [
+                        { scale: isWinningCell ? winPulseAnim : cellScaleAnims[i] }
+                      ]
+                    }}
+                  >
+                    <GlassCard
+                      style={[
+                        styles.cell,
+                        cell && styles.cellFilled,
+                        isWinningCell && styles.cellWinning
+                      ]}
+                    >
+                      <Text style={styles.cellText}>{cell}</Text>
+                    </GlassCard>
+                  </Animated.View>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+        </GlassCard>
+      </Animated.View>
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16 },
-  gameContent: { padding: 16, paddingBottom: 40 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  headerRight: { flexDirection: 'row', gap: 8 },
-  btn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
-  smBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
-  btnText: { fontWeight: '600' },
-  placeholder: { width: 70 },
-  title: { fontSize: 16, fontWeight: '700', flex: 1, textAlign: 'center' },
-  subtitle: { fontSize: 16, marginBottom: 16, textAlign: 'center' },
-  modeRow: { flexDirection: 'row', gap: 16, justifyContent: 'center' },
-  modeBtn: { padding: 20, borderRadius: 12, borderWidth: 1, alignItems: 'center', minWidth: 120 },
-  modeEmoji: { fontSize: 32, marginBottom: 8 },
-  modeTitle: { fontWeight: '600' },
-  scores: { flexDirection: 'row', justifyContent: 'space-around', padding: 12, borderRadius: 10, borderWidth: 1, marginBottom: 12 },
-  scoreItem: { alignItems: 'center' },
-  scoreLabel: { fontSize: 12, marginBottom: 2 },
-  scoreVal: { fontSize: 18, fontWeight: '700' },
-  status: { textAlign: 'center', marginBottom: 12, fontSize: 16, fontWeight: '600' },
-  board: { flexDirection: 'row', flexWrap: 'wrap', padding: 8, borderRadius: 12, borderWidth: 1, alignSelf: 'center' },
-  cell: { width: 92, height: 92, borderWidth: 2, borderRadius: 8, justifyContent: 'center', alignItems: 'center', margin: 4 },
-  cellText: { fontSize: 32, fontWeight: '700' },
+  container: {
+    flex: 1,
+    backgroundColor: designColors.Background
+  },
+  content: {
+    padding: spacing.lg,
+    paddingBottom: 40
+  },
+  gameContent: {
+    padding: spacing.lg,
+    paddingBottom: 40
+  },
+  headerGradient: {
+    borderRadius: spacing.lg,
+    padding: 2,
+    marginBottom: spacing.md
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: designColors.Background,
+    borderRadius: spacing.lg,
+    padding: spacing.md
+  },
+  headerRight: {
+    flexDirection: 'row',
+    gap: spacing.sm
+  },
+  backButton: {
+    minHeight: 44,
+    minWidth: 80
+  },
+  smallButton: {
+    minHeight: 44,
+    minWidth: 60
+  },
+  placeholder: {
+    width: 80
+  },
+  title: {
+    fontSize: typography.fontSize.xl,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    color: designColors.TextPrimary,
+    textAlign: 'center',
+    flex: 1
+  },
+  subtitle: {
+    marginBottom: spacing.lg,
+    textAlign: 'center'
+  },
+  modeRow: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    justifyContent: 'center'
+  },
+  modeTouchable: {
+    minHeight: 44,
+    minWidth: 120
+  },
+  modeCard: {
+    alignItems: 'center',
+    minWidth: 120,
+    minHeight: 120,
+    justifyContent: 'center'
+  },
+  modeEmoji: {
+    fontSize: 40,
+    marginBottom: spacing.sm
+  },
+  modeTitle: {
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    color: designColors.TextPrimary,
+    fontSize: typography.fontSize.md
+  },
+  scoresCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: spacing.md
+  },
+  scoreItem: {
+    alignItems: 'center'
+  },
+  scoreLabel: {
+    fontSize: typography.fontSize.xs,
+    color: designColors.TextMuted,
+    marginBottom: spacing.xs,
+    fontFamily: typography.fontFamily.body
+  },
+  scoreVal: {
+    fontSize: typography.fontSize.xl,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    color: designColors.TextPrimary
+  },
+  status: {
+    textAlign: 'center',
+    marginBottom: spacing.md
+  },
+  boardContainer: {
+    alignSelf: 'center',
+    padding: spacing.sm
+  },
+  board: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: 300,
+    height: 300
+  },
+  cellTouchable: {
+    width: '33.33%',
+    height: '33.33%',
+    padding: spacing.xs,
+    minHeight: 44,
+    minWidth: 44
+  },
+  cell: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  cellFilled: {
+    backgroundColor: designColors.NeonRed + '20'
+  },
+  cellWinning: {
+    backgroundColor: designColors.NeonRed + '40',
+    borderColor: designColors.NeonRed,
+    borderWidth: 2,
+    ...shadows.neonGlow
+  },
+  cellText: {
+    fontSize: 40,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    color: designColors.TextPrimary
+  }
 })

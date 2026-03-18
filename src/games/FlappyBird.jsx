@@ -1,7 +1,13 @@
+import React from 'react'
 import { useState, useEffect, useRef } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated } from 'react-native'
+import LinearGradient from 'react-native-linear-gradient'
 import { storage } from '../utils/storage'
 import { soundManager } from '../utils/sounds'
+import { colors, gradients, spacing, typography } from '../design/tokens'
+import GlassCard from '../design/components/GlassCard'
+import StatBar from '../design/components/StatBar'
+import GradientButton from '../design/components/GradientButton'
 
 const { width: W, height: SCREEN_H } = Dimensions.get('window')
 const H = Math.min(SCREEN_H - 220, 450) // Responsive height
@@ -13,7 +19,7 @@ const PIPE_SPACING = 180
 const BIRD_X = W * 0.3
 const BIRD_SIZE = 28
 
-export default function FlappyBird({ onBack, colors }) {
+export default function FlappyBird({ onBack, colors: colorsProp }) {
   const [birdY, setBirdY] = useState(H / 2 - BIRD_SIZE / 2)
   const [velocity, setVelocity] = useState(0)
   const [pipes, setPipes] = useState([])
@@ -25,6 +31,9 @@ export default function FlappyBird({ onBack, colors }) {
   const loopRef = useRef(null)
   const velRef = useRef(0)
   const yRef = useRef(H / 2 - BIRD_SIZE / 2)
+  
+  // Animation values
+  const gameOverFadeAnim = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
     yRef.current = birdY
@@ -55,6 +64,18 @@ export default function FlappyBird({ onBack, colors }) {
     }
     return false
   }
+  
+  // Trigger game over fade-in animation
+  useEffect(() => {
+    if (gameOver) {
+      gameOverFadeAnim.setValue(0)
+      Animated.timing(gameOverFadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true
+      }).start()
+    }
+  }, [gameOver])
 
   useEffect(() => {
     if (!started || gameOver) {
@@ -133,74 +154,235 @@ export default function FlappyBird({ onBack, colors }) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={[styles.btn, { backgroundColor: colors.cardBg }]}>
-          <Text style={[styles.btnText, { color: colors.text }]}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Flappy Bird</Text>
-        <TouchableOpacity onPress={reset} style={[styles.btn, { backgroundColor: colors.cardBg }]}>
-          <Text style={[styles.btnText, { color: colors.text }]}>Reset</Text>
-        </TouchableOpacity>
+    <View style={styles.container}>
+      {/* Header with gradient accent */}
+      <LinearGradient
+        colors={gradients.flappyBird}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.headerGradient}
+      >
+        <View style={styles.header}>
+          <GradientButton
+            gradient={gradients.flappyBird}
+            label="← Back"
+            onPress={onBack}
+            style={styles.backButton}
+          />
+          <Text style={styles.title}>Flappy Bird</Text>
+          <GradientButton
+            gradient={gradients.flappyBird}
+            label="Reset"
+            onPress={reset}
+            style={styles.resetButton}
+          />
+        </View>
+      </LinearGradient>
+
+      {/* Stats display */}
+      <View style={styles.statsContainer}>
+        <StatBar
+          label="Score"
+          value={score}
+          color={gradients.flappyBird[0]}
+        />
+        <StatBar
+          label="Best"
+          value={highScore}
+          color={colors.NeonAmber}
+        />
       </View>
 
-      <View style={[styles.info, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-        <Text style={[styles.infoText, { color: colors.text }]}>Score: {score}</Text>
-        <Text style={[styles.infoText, { color: colors.text }]}>Best: {highScore}</Text>
-        {gameOver && <Text style={[styles.over, { color: colors.error }]}>Game Over</Text>}
-        {!started && !gameOver && <Text style={[styles.hint, { color: colors.textSecondary }]}>Tap to fly!</Text>}
-      </View>
-
+      {/* Game area with glassmorphism */}
       <TouchableOpacity
-        style={[styles.area, { backgroundColor: '#7dd3fc33', borderColor: colors.border }]}
+        style={styles.gameAreaWrapper}
         onPress={jump}
         activeOpacity={1}
       >
-        <View
-          style={[
-            styles.bird,
-            {
-              left: BIRD_X,
-              top: birdY,
-              width: BIRD_SIZE,
-              height: BIRD_SIZE,
-              transform: [{ rotate: `${Math.min(velocity * 2, 35)}deg` }],
-            },
-          ]}
-        >
-          <Text style={styles.birdEmoji}>🐦</Text>
-        </View>
-        {pipes.map((p) => (
-          <View key={p.id}>
-            <View style={[styles.pipe, styles.pipeTop, { left: p.x, height: p.topHeight }]} />
-            <View
-              style={[
-                styles.pipe,
-                styles.pipeBottom,
-                { left: p.x, top: p.topHeight + PIPE_GAP, height: H - p.topHeight - PIPE_GAP },
-              ]}
-            />
+        <GlassCard style={styles.gameArea}>
+          {/* Bird with rotation animation */}
+          <View
+            style={[
+              styles.bird,
+              {
+                left: BIRD_X,
+                top: birdY,
+                width: BIRD_SIZE,
+                height: BIRD_SIZE,
+                transform: [{ rotate: `${Math.min(velocity * 3, 45)}deg` }],
+              },
+            ]}
+          >
+            <Text style={styles.birdEmoji}>🐦</Text>
           </View>
-        ))}
+          
+          {/* Pipes with gradient coloring */}
+          {pipes.map((p) => (
+            <View key={p.id}>
+              <LinearGradient
+                colors={gradients.flappyBird}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={[styles.pipe, styles.pipeTop, { left: p.x, height: p.topHeight }]}
+              />
+              <LinearGradient
+                colors={[...gradients.flappyBird].reverse()}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={[
+                  styles.pipe,
+                  styles.pipeBottom,
+                  { left: p.x, top: p.topHeight + PIPE_GAP, height: H - p.topHeight - PIPE_GAP },
+                ]}
+              />
+            </View>
+          ))}
+          
+          {/* Game over message with fade-in animation */}
+          {gameOver && (
+            <Animated.View
+              style={[
+                styles.gameOverContainer,
+                {
+                  opacity: gameOverFadeAnim
+                }
+              ]}
+            >
+              <GlassCard style={styles.gameOverCard}>
+                <Text style={styles.gameOverText}>Game Over</Text>
+                <Text style={styles.gameOverScore}>Score: {score}</Text>
+              </GlassCard>
+            </Animated.View>
+          )}
+          
+          {/* Start hint */}
+          {!started && !gameOver && (
+            <View style={styles.hintContainer}>
+              <GlassCard style={styles.hintCard}>
+                <Text style={styles.hintText}>Tap to fly!</Text>
+              </GlassCard>
+            </View>
+          )}
+        </GlassCard>
       </TouchableOpacity>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12 },
-  btn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
-  btnText: { fontWeight: '600' },
-  title: { fontSize: 18, fontWeight: '700' },
-  info: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 10, marginHorizontal: 16, marginBottom: 8, borderRadius: 8, borderWidth: 1 },
-  infoText: { fontSize: 14, fontWeight: '600' },
-  over: { fontWeight: '600' },
-  hint: { fontSize: 13 },
-  area: { flex: 1, marginHorizontal: 16, borderRadius: 12, borderWidth: 1, overflow: 'hidden', position: 'relative' },
-  bird: { position: 'absolute', justifyContent: 'center', alignItems: 'center' },
-  birdEmoji: { fontSize: 24 },
-  pipe: { position: 'absolute', width: 50, backgroundColor: '#10b981', left: 0 },
-  pipeTop: { top: 0, borderTopLeftRadius: 8, borderTopRightRadius: 8 },
-  pipeBottom: { borderBottomLeftRadius: 8, borderBottomRightRadius: 8 },
+  container: {
+    flex: 1,
+    backgroundColor: colors.Background
+  },
+  headerGradient: {
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg
+  },
+  backButton: {
+    minWidth: 80
+  },
+  resetButton: {
+    minWidth: 80
+  },
+  title: {
+    fontSize: typography.fontSize.xl,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    color: colors.TextPrimary
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg
+  },
+  gameAreaWrapper: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg
+  },
+  gameArea: {
+    flex: 1,
+    position: 'relative',
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: gradients.flappyBird[0]
+  },
+  bird: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10
+  },
+  birdEmoji: {
+    fontSize: 24
+  },
+  pipe: {
+    position: 'absolute',
+    width: 50,
+    left: 0
+  },
+  pipeTop: {
+    top: 0,
+    borderTopLeftRadius: spacing.sm,
+    borderTopRightRadius: spacing.sm
+  },
+  pipeBottom: {
+    borderBottomLeftRadius: spacing.sm,
+    borderBottomRightRadius: spacing.sm
+  },
+  gameOverContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 20
+  },
+  gameOverCard: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.xl,
+    minWidth: 200
+  },
+  gameOverText: {
+    fontSize: typography.fontSize.xxl,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    color: colors.Danger,
+    marginBottom: spacing.md
+  },
+  gameOverScore: {
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.body,
+    color: colors.TextPrimary
+  },
+  hintContainer: {
+    position: 'absolute',
+    top: '40%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 15
+  },
+  hintCard: {
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl
+  },
+  hintText: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.body,
+    color: colors.TextMuted,
+    textAlign: 'center'
+  }
 })
