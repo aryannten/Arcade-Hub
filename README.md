@@ -61,12 +61,6 @@ Eat food, grow longer, avoid walls. The classic arcade experience with cyan grad
 ### Flappy Bird 
 Tap to fly through pipes. Timing is everything! Light blue gradient design with custom bird sprite.
 
-### Breakout 
-Classic brick-breaking arcade game. Control the paddle and clear all bricks!
-
-### Infinite Racing 
-Dodge obstacles in this endless racing game. How far can you go?
-
 ## 🛠️ Tech Stack
 
 - **Framework:** React Native 0.81.5
