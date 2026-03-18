@@ -1,227 +1,341 @@
-import { useState, useEffect, useRef } from 'react'
-import { View, Text, TextInput, StyleSheet, ScrollView, Animated } from 'react-native'
-import LinearGradient from 'react-native-linear-gradient'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Animated, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { storage } from '../utils/storage'
 import { colors as designColors, gradients, spacing, typography, shadows } from '../design/tokens'
 import GlassCard from '../design/components/GlassCard'
 import GradientButton from '../design/components/GradientButton'
-import StatBar from '../design/components/StatBar'
+import NeonText from '../design/components/NeonText'
+import { resolveThemeColors } from '../utils/theme'
+
+const DIFFICULTIES = [
+  { min: 1, max: 10, label: 'Easy', caption: '1 to 10' },
+  { min: 1, max: 50, label: 'Medium', caption: '1 to 50' },
+  { min: 1, max: 100, label: 'Hard', caption: '1 to 100' },
+]
+
+function getDifficultyKey(range) {
+  return `${range.min}-${range.max}`
+}
+
+function getIdealGuessCount(range) {
+  return Math.ceil(Math.log2(range.max - range.min + 1))
+}
+
+function getRangeHint(history, range) {
+  let min = range.min
+  let max = range.max
+
+  history.forEach((entry) => {
+    if (entry.result === 'low') min = Math.max(min, entry.guess + 1)
+    if (entry.result === 'high') max = Math.min(max, entry.guess - 1)
+  })
+
+  return { min, max }
+}
+
+function getMessageTone(result, gameWon, themeColors) {
+  if (gameWon) return designColors.Success
+  if (result === 'invalid') return designColors.NeonAmber
+  if (result === 'high') return designColors.Danger
+  if (result === 'low') return designColors.NeonCyan
+  return themeColors.text
+}
 
 export default function NumberGuesser({ onBack, colors }) {
+  const themeColors = resolveThemeColors(colors)
+  const isLight = themeColors.name === 'light'
+  const textPrimaryStyle = { color: themeColors.text }
+  const textSecondaryStyle = { color: themeColors.textSecondary }
+  const heroSurfaceStyle = { backgroundColor: isLight ? 'rgba(255,255,255,0.92)' : '#09101F' }
+  const targetCardStyle = {
+    borderColor: isLight ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.28)',
+    backgroundColor: isLight ? 'rgba(59, 130, 246, 0.08)' : 'rgba(30, 58, 138, 0.18)',
+  }
+  const inputSurfaceStyle = {
+    borderColor: isLight ? themeColors.border : 'rgba(59, 130, 246, 0.35)',
+    backgroundColor: isLight ? 'rgba(255,255,255,0.94)' : 'rgba(255, 255, 255, 0.06)',
+  }
+  const historyRowStyle = {
+    borderColor: isLight ? themeColors.border : 'rgba(255,255,255,0.08)',
+    backgroundColor: isLight ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.04)',
+  }
+  const [range, setRange] = useState(DIFFICULTIES[2])
   const [targetNumber, setTargetNumber] = useState(0)
   const [guess, setGuess] = useState('')
   const [attempts, setAttempts] = useState(0)
   const [message, setMessage] = useState('')
+  const [lastResult, setLastResult] = useState('idle')
   const [gameWon, setGameWon] = useState(false)
-  const [range, setRange] = useState({ min: 1, max: 100 })
   const [guessHistory, setGuessHistory] = useState([])
-  
-  // Animation values
+
   const fadeAnim = useRef(new Animated.Value(0)).current
-  const slideAnim = useRef(new Animated.Value(-20)).current
+  const slideAnim = useRef(new Animated.Value(16)).current
   const pulseAnim = useRef(new Animated.Value(1)).current
 
-  const startNewGame = () => {
-    const newTarget = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min
+  const hintRange = useMemo(() => getRangeHint(guessHistory, range), [guessHistory, range])
+
+  const startNewGame = (nextRange = range) => {
+    const newTarget = Math.floor(Math.random() * (nextRange.max - nextRange.min + 1)) + nextRange.min
     setTargetNumber(newTarget)
     setGuess('')
     setAttempts(0)
-    setMessage(`Guess a number between ${range.min} and ${range.max}!`)
-    setGameWon(false)
     setGuessHistory([])
+    setGameWon(false)
+    setLastResult('idle')
+    setMessage(`Pick a number from ${nextRange.min} to ${nextRange.max}.`)
+    pulseAnim.setValue(1)
   }
 
   useEffect(() => {
-    startNewGame()
-    // Entry animation
+    startNewGame(range)
+    fadeAnim.setValue(0)
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 300,
-      useNativeDriver: true
+      duration: 280,
+      useNativeDriver: true,
     }).start()
   }, [])
 
+  const animateFeedback = (didWin) => {
+    slideAnim.setValue(16)
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 220,
+      useNativeDriver: true,
+    }).start()
+
+    if (!didWin) return
+
+    pulseAnim.setValue(1)
+    Animated.sequence([
+      Animated.timing(pulseAnim, {
+        toValue: 1.05,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+      Animated.timing(pulseAnim, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+    ]).start()
+  }
+
   const handleGuess = () => {
-    const numGuess = parseInt(guess, 10)
-    if (isNaN(numGuess) || numGuess < range.min || numGuess > range.max) {
-      setMessage(`Please enter a valid number between ${range.min} and ${range.max}`)
-      // Feedback slide-in animation
-      Animated.sequence([
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true
-        })
-      ]).start()
+    const trimmed = guess.trim()
+    const numericGuess = Number.parseInt(trimmed, 10)
+
+    if (!trimmed || Number.isNaN(numericGuess) || numericGuess < range.min || numericGuess > range.max) {
+      setLastResult('invalid')
+      setMessage(`Enter a whole number between ${range.min} and ${range.max}.`)
+      animateFeedback(false)
       return
     }
-    const newAttempts = attempts + 1
-    setAttempts(newAttempts)
-    setGuessHistory((prev) => [...prev, { guess: numGuess, attempt: newAttempts }])
 
-    if (numGuess === targetNumber) {
-      setMessage(`🎉 You got it in ${newAttempts} attempts!`)
+    const nextAttempts = attempts + 1
+    let nextResult = 'idle'
+    let nextMessage = ''
+
+    if (numericGuess === targetNumber) {
+      nextResult = 'win'
+      nextMessage = `Locked in. You found ${targetNumber} in ${nextAttempts} tries.`
       setGameWon(true)
       storage.updateGameStats('numberguesser', {
         gamesPlayed: 1,
         gamesWon: 1,
-        minAttempts: newAttempts,
+        minAttempts: nextAttempts,
       })
-      // Success pulse animation
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.05,
-            duration: 300,
-            useNativeDriver: true
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true
-          })
-        ])
-      ).start()
-    } else if (numGuess < targetNumber) {
-      setMessage('Too low! Try a higher number.')
+    } else if (numericGuess < targetNumber) {
+      nextResult = 'low'
+      nextMessage = `${numericGuess} is too low. Push higher.`
     } else {
-      setMessage('Too high! Try a lower number.')
+      nextResult = 'high'
+      nextMessage = `${numericGuess} is too high. Come down a bit.`
     }
-    
-    // Feedback slide-in animation
-    Animated.sequence([
-      Animated.timing(slideAnim, {
-        toValue: -20,
-        duration: 0,
-        useNativeDriver: true
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true
-      })
-    ]).start()
-    
+
+    setAttempts(nextAttempts)
+    setGuessHistory((entries) => [
+      {
+        attempt: nextAttempts,
+        guess: numericGuess,
+        result: nextResult,
+      },
+      ...entries,
+    ])
+    setLastResult(nextResult)
+    setMessage(nextMessage)
     setGuess('')
+    animateFeedback(nextResult === 'win')
   }
 
-  const handleRangeChange = (newRange) => {
-    setRange(newRange)
-    const newTarget = Math.floor(Math.random() * (newRange.max - newRange.min + 1)) + newRange.min
-    setTargetNumber(newTarget)
-    setGuess('')
-    setAttempts(0)
-    setMessage(`Guess a number between ${newRange.min} and ${newRange.max}!`)
-    setGameWon(false)
-    setGuessHistory([])
+  const handleRangeChange = (nextRange) => {
+    setRange(nextRange)
+    startNewGame(nextRange)
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Animated.View style={{ opacity: fadeAnim }}>
-        {/* Header with gradient accent */}
+    <ScrollView style={[styles.container, { backgroundColor: themeColors.bg }]} contentContainerStyle={styles.content}>
+      <Animated.View style={[styles.contentWrap, { opacity: fadeAnim }]}>
         <LinearGradient
           colors={gradients.numberGuesser}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.headerGradient}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroBorder}
         >
-          <View style={styles.header}>
-            <GradientButton
-              gradient={gradients.numberGuesser}
-              label="← Back"
-              onPress={onBack}
-              style={styles.backButton}
-            />
-            <Text style={styles.title}>Number Guesser</Text>
-            <GradientButton
-              gradient={gradients.numberGuesser}
-              label="New Game"
-              onPress={startNewGame}
-              style={styles.restartButton}
-            />
+          <View style={[styles.heroInner, heroSurfaceStyle]}>
+            <View style={styles.headerRow}>
+              <GradientButton
+                gradient={gradients.numberGuesser}
+                label="Back"
+                onPress={onBack}
+                style={styles.headerButton}
+              />
+              <GradientButton
+                gradient={[designColors.NeonAmber, '#7C2D12']}
+                label="New"
+                onPress={() => startNewGame()}
+                style={styles.headerButton}
+              />
+            </View>
+
+            <NeonText color={designColors.NeonCyan} size={30} style={styles.heroTitle}>
+              Number Guesser
+            </NeonText>
+            <Text style={[styles.heroCopy, textPrimaryStyle]}>
+              Narrow the range, read the hints, and land the target in as few attempts as possible.
+            </Text>
+
+            <GlassCard style={[styles.targetCard, targetCardStyle]} colors={themeColors}>
+              <Text style={[styles.targetLabel, textSecondaryStyle]}>Current Range</Text>
+              <Text style={[styles.targetValue, textPrimaryStyle]}>{range.min} to {range.max}</Text>
+              <Text style={[styles.targetHint, textSecondaryStyle]}>Perfect play solves this in about {getIdealGuessCount(range)} guesses.</Text>
+            </GlassCard>
           </View>
         </LinearGradient>
 
-        {/* Difficulty selector */}
-        <GlassCard style={styles.diffCard}>
-          <Text style={styles.diffLabel}>Difficulty:</Text>
-          <View style={styles.diffRow}>
-            {[
-              { min: 1, max: 10, label: 'Easy (1-10)' },
-              { min: 1, max: 50, label: 'Medium (1-50)' },
-              { min: 1, max: 100, label: 'Hard (1-100)' },
-            ].map((r) => (
-              <GradientButton
-                key={r.max}
-                gradient={range.max === r.max ? gradients.numberGuesser : [designColors.Surface, designColors.Surface]}
-                label={r.label}
-                onPress={() => handleRangeChange(r)}
-                style={styles.diffBtn}
-              />
-            ))}
+        <GlassCard style={styles.difficultyCard} colors={themeColors}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, textPrimaryStyle]}>Difficulty</Text>
+            <Text style={[styles.sectionMeta, textSecondaryStyle]}>Choose a search space</Text>
+          </View>
+          <View style={styles.difficultyStack}>
+            {DIFFICULTIES.map((item) => {
+              const active = getDifficultyKey(item) === getDifficultyKey(range)
+              return (
+                <GradientButton
+                  key={getDifficultyKey(item)}
+                  gradient={active ? gradients.numberGuesser : isLight ? ['rgba(255,255,255,0.96)', 'rgba(224,242,254,0.92)'] : ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.02)']}
+                  label={`${item.label} · ${item.caption}`}
+                  onPress={() => handleRangeChange(item)}
+                  style={styles.difficultyButton}
+                />
+              )
+            })}
           </View>
         </GlassCard>
 
-        {/* Stats with StatBar component */}
-        <GlassCard style={styles.statsCard}>
-          <StatBar
-            label="Attempts"
-            value={attempts}
-            color={designColors.NeonCyan}
-          />
-        </GlassCard>
+        <View style={styles.metricsRow}>
+          <GlassCard style={styles.metricCard} colors={themeColors}>
+            <Text style={[styles.metricLabel, textSecondaryStyle]}>Attempts</Text>
+            <Text style={[styles.metricValue, textPrimaryStyle]}>{attempts}</Text>
+          </GlassCard>
+          <GlassCard style={styles.metricCard} colors={themeColors}>
+            <Text style={[styles.metricLabel, textSecondaryStyle]}>Hint Window</Text>
+            <Text style={[styles.metricValueSmall, textPrimaryStyle]}>{hintRange.min} to {hintRange.max}</Text>
+          </GlassCard>
+          <GlassCard style={styles.metricCard} colors={themeColors}>
+            <Text style={[styles.metricLabel, textSecondaryStyle]}>Last Guess</Text>
+            <Text style={[styles.metricValueSmall, textPrimaryStyle]}>{guessHistory[0] ? guessHistory[0].guess : '—'}</Text>
+          </GlassCard>
+        </View>
 
-        {/* Feedback message with slide-in animation */}
         <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
-          <GlassCard style={styles.messageCard}>
-            <Text style={styles.message}>{message}</Text>
+          <GlassCard style={styles.messageCard} colors={themeColors}>
+            <Text style={[styles.messageEyebrow, { color: getMessageTone(lastResult, gameWon, themeColors) }]}>
+              {gameWon ? 'Solved' : lastResult === 'high' ? 'Too High' : lastResult === 'low' ? 'Too Low' : lastResult === 'invalid' ? 'Invalid Guess' : 'Status'}
+            </Text>
+            <Text style={[styles.messageText, textPrimaryStyle]}>{message}</Text>
           </GlassCard>
         </Animated.View>
 
-        {/* Win message with pulse animation */}
-        {gameWon && (
-          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-            <GlassCard style={[styles.winCard, shadows.neonGlow]}>
-              <Text style={styles.winText}>🎉 You got it in {attempts} attempts!</Text>
-            </GlassCard>
-          </Animated.View>
-        )}
+        <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+          <GlassCard style={[styles.inputCard, gameWon && styles.inputCardWon]} colors={themeColors}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, textPrimaryStyle]}>{gameWon ? 'Play Again' : 'Make a Guess'}</Text>
+              <Text style={[styles.sectionMeta, textSecondaryStyle]}>{gameWon ? 'Start a fresh round' : `Enter ${range.min}–${range.max}`}</Text>
+            </View>
 
-        {/* Input field with glassmorphism styling */}
-        {!gameWon && (
-          <GlassCard style={styles.inputCard}>
-            <TextInput
-              style={styles.input}
-              value={guess}
-              onChangeText={setGuess}
-              placeholder="Your guess"
-              placeholderTextColor={designColors.TextMuted}
-              keyboardType="number-pad"
-            />
-            <GradientButton
-              gradient={gradients.numberGuesser}
-              label="Guess!"
-              onPress={handleGuess}
-              disabled={!guess.trim()}
-              style={styles.guessBtn}
-            />
+            {!gameWon && (
+              <TextInput
+                style={[styles.input, textPrimaryStyle, inputSurfaceStyle]}
+                value={guess}
+                onChangeText={setGuess}
+                placeholder="Type your guess"
+                placeholderTextColor={themeColors.textSecondary}
+                keyboardType="number-pad"
+                returnKeyType="done"
+                maxLength={3}
+                onSubmitEditing={handleGuess}
+              />
+            )}
+
+            <View style={styles.actionRow}>
+              {!gameWon && (
+                <GradientButton
+                  gradient={gradients.numberGuesser}
+                  label="Submit Guess"
+                  onPress={handleGuess}
+                  disabled={!guess.trim()}
+                  style={styles.primaryAction}
+                />
+              )}
+              <GradientButton
+                gradient={[designColors.NeonAmber, '#7C2D12']}
+                label={gameWon ? 'Start New Round' : 'Reset Round'}
+                onPress={() => startNewGame()}
+                style={styles.secondaryAction}
+              />
+            </View>
           </GlassCard>
-        )}
+        </Animated.View>
 
-        {/* Guess history */}
-        {guessHistory.length > 0 && (
-          <GlassCard style={styles.history}>
-            <Text style={styles.historyTitle}>Your guesses:</Text>
+        <GlassCard style={styles.historyCard} colors={themeColors}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, textPrimaryStyle]}>Guess History</Text>
+            <Text style={[styles.sectionMeta, textSecondaryStyle]}>{guessHistory.length ? 'Latest guess first' : 'No guesses yet'}</Text>
+          </View>
+
+          {guessHistory.length === 0 ? (
+            <Text style={[styles.emptyState, textSecondaryStyle]}>Your guesses will appear here with directional feedback.</Text>
+          ) : (
             <View style={styles.historyList}>
-              {guessHistory.map((item, i) => (
-                <View key={i} style={styles.historyItem}>
-                  <Text style={styles.historyItemText}>{item.guess}</Text>
+              {guessHistory.map((item) => (
+                <View key={item.attempt} style={[styles.historyRow, historyRowStyle]}>
+                  <View>
+                    <Text style={[styles.historyAttempt, textSecondaryStyle]}>Attempt {item.attempt}</Text>
+                    <Text style={[styles.historyGuess, textPrimaryStyle]}>{item.guess}</Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.historyResult,
+                      {
+                        color:
+                          item.result === 'win'
+                            ? designColors.Success
+                            : item.result === 'low'
+                              ? designColors.NeonCyan
+                              : designColors.Danger,
+                      },
+                    ]}
+                  >
+                    {item.result === 'win' ? 'Correct' : item.result === 'low' ? 'Go Higher' : 'Go Lower'}
+                  </Text>
                 </View>
               ))}
             </View>
-          </GlassCard>
-        )}
+          )}
+        </GlassCard>
       </Animated.View>
     </ScrollView>
   )
@@ -230,129 +344,197 @@ export default function NumberGuesser({ onBack, colors }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: designColors.Background
   },
   content: {
     padding: spacing.lg,
-    paddingBottom: 40
+    paddingBottom: spacing.xxl,
   },
-  headerGradient: {
-    borderRadius: spacing.lg,
+  contentWrap: {
+    gap: spacing.md,
+  },
+  heroBorder: {
+    borderRadius: spacing.xl,
     padding: 2,
-    marginBottom: spacing.md
   },
-  header: {
+  heroInner: {
+    borderRadius: spacing.xl - 2,
+    padding: spacing.xl,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xl,
+    gap: spacing.md,
+  },
+  headerButton: {
+    minWidth: 88,
+  },
+  heroTitle: {
+    textAlign: 'left',
+    marginBottom: spacing.sm,
+  },
+  heroCopy: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.body,
+    lineHeight: 24,
+    marginBottom: spacing.xl,
+  },
+  targetCard: {
+  },
+  targetLabel: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.body,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: spacing.xs,
+  },
+  targetValue: {
+    fontSize: 40,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    marginBottom: spacing.xs,
+  },
+  targetHint: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.body,
+    lineHeight: 20,
+  },
+  difficultyCard: {
+    paddingVertical: spacing.lg,
+  },
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: designColors.Background,
-    borderRadius: spacing.lg,
-    padding: spacing.md
+    gap: spacing.md,
+    marginBottom: spacing.md,
   },
-  backButton: {
-    minHeight: 44,
-    minWidth: 80
-  },
-  restartButton: {
-    minHeight: 44,
-    minWidth: 100
-  },
-  title: {
-    fontSize: typography.fontSize.xl,
+  sectionTitle: {
+    fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.heading,
     fontWeight: 'bold',
-    color: designColors.TextPrimary,
-    textAlign: 'center'
   },
-  diffCard: {
-    marginBottom: spacing.md
-  },
-  diffLabel: {
-    fontSize: typography.fontSize.sm,
+  sectionMeta: {
+    fontSize: typography.fontSize.xs,
     fontFamily: typography.fontFamily.body,
-    color: designColors.TextMuted,
-    marginBottom: spacing.sm
   },
-  diffRow: {
-    gap: spacing.sm
+  difficultyStack: {
+    gap: spacing.sm,
   },
-  diffBtn: {
-    minHeight: 44
+  difficultyButton: {
+    minHeight: 50,
   },
-  statsCard: {
-    marginBottom: spacing.md
+  metricsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  metricCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+  },
+  metricLabel: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.body,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: spacing.xs,
+    textAlign: 'center',
+  },
+  metricValue: {
+    fontSize: typography.fontSize.xxl,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+  },
+  metricValueSmall: {
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   messageCard: {
-    marginBottom: spacing.md
+    paddingVertical: spacing.lg,
   },
-  message: {
-    textAlign: 'center',
-    fontSize: typography.fontSize.md,
-    fontFamily: typography.fontFamily.body,
-    color: designColors.TextPrimary
-  },
-  winCard: {
-    marginBottom: spacing.md,
-    backgroundColor: designColors.Success + '20',
-    borderColor: designColors.Success,
-    borderWidth: 1
-  },
-  winText: {
-    textAlign: 'center',
-    fontSize: typography.fontSize.md,
+  messageEyebrow: {
+    fontSize: typography.fontSize.xs,
     fontFamily: typography.fontFamily.heading,
     fontWeight: 'bold',
-    color: designColors.TextPrimary
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: spacing.xs,
+  },
+  messageText: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.body,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   inputCard: {
-    marginBottom: spacing.md
+    paddingVertical: spacing.lg,
+    ...shadows.neonGlow,
+  },
+  inputCardWon: {
+    borderColor: designColors.Success,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
   },
   input: {
-    fontSize: typography.fontSize.md,
-    fontFamily: typography.fontFamily.body,
-    color: designColors.TextPrimary,
-    backgroundColor: designColors.Surface,
-    borderWidth: 1,
-    borderColor: designColors.SurfaceBorder,
-    borderRadius: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.md,
-    minHeight: 48
-  },
-  guessBtn: {
-    minHeight: 48
-  },
-  history: {
-    marginTop: spacing.md
-  },
-  historyTitle: {
+    fontSize: 32,
     fontFamily: typography.fontFamily.heading,
     fontWeight: 'bold',
-    fontSize: typography.fontSize.sm,
-    color: designColors.TextPrimary,
-    marginBottom: spacing.sm
-  },
-  historyList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm
-  },
-  historyItem: {
-    backgroundColor: designColors.Surface,
+    textAlign: 'center',
+    borderRadius: spacing.lg,
     borderWidth: 1,
-    borderColor: designColors.SurfaceBorder,
-    borderRadius: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: 32,
-    minWidth: 44,
-    justifyContent: 'center',
-    alignItems: 'center'
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    marginBottom: spacing.md,
+    minHeight: 72,
   },
-  historyItemText: {
+  actionRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  primaryAction: {
+    flex: 1,
+  },
+  secondaryAction: {
+    flex: 1,
+  },
+  historyCard: {
+    paddingVertical: spacing.lg,
+  },
+  emptyState: {
     fontSize: typography.fontSize.sm,
     fontFamily: typography.fontFamily.body,
-    color: designColors.TextMuted
-  }
+    lineHeight: 20,
+  },
+  historyList: {
+    gap: spacing.sm,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: spacing.md,
+    borderWidth: 1,
+  },
+  historyAttempt: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.body,
+    marginBottom: 2,
+  },
+  historyGuess: {
+    fontSize: typography.fontSize.lg,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+  },
+  historyResult: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    textAlign: 'right',
+  },
 })

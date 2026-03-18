@@ -1,6 +1,6 @@
 import React, { useRef } from 'react'
 import { TouchableOpacity, Text, StyleSheet, Animated } from 'react-native'
-import LinearGradient from 'react-native-linear-gradient'
+import { LinearGradient } from 'expo-linear-gradient'
 import { spacing, typography, colors } from '../tokens'
 
 /**
@@ -22,7 +22,8 @@ export default function GradientButton({
   label, 
   icon, 
   disabled = false, 
-  style 
+  style,
+  ...props
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current
 
@@ -50,6 +51,7 @@ export default function GradientButton({
       disabled={disabled}
       activeOpacity={0.9}
       style={[styles.touchable, style]}
+      {...props}
     >
       <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
         <LinearGradient

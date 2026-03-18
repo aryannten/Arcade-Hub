@@ -13,7 +13,7 @@ import { typography, colors } from '../tokens'
  * @param {number} size - Font size (default: 24)
  * @param {StyleProp} style - Additional styles
  */
-export default function NeonText({ children, color = colors.NeonCyan, size = 24, style }) {
+export default function NeonText({ children, color = colors.NeonCyan, size = 24, style, ...props }) {
   return (
     <Text 
       style={[
@@ -27,6 +27,7 @@ export default function NeonText({ children, color = colors.NeonCyan, size = 24,
         },
         style
       ]}
+      {...props}
     >
       {children}
     </Text>

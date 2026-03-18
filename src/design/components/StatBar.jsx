@@ -13,10 +13,10 @@ import { colors, spacing, typography } from '../tokens'
  * @param {string} color - Accent color for value
  * @param {string} icon - Optional icon name
  */
-export default function StatBar({ label, value, color, icon }) {
+export default function StatBar({ label, value, color, icon, colors: themeColors }) {
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+    <View style={[styles.container, themeColors && { backgroundColor: themeColors.cardBg, borderColor: themeColors.border }]}>
+      <Text style={[styles.label, themeColors && { color: themeColors.textSecondary }]}>{label}</Text>
       <Text style={[styles.value, { color: color || colors.NeonCyan }]}>
         {value}
       </Text>

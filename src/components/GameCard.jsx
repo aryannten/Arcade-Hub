@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated } from 'react-native'
 import { MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons'
-import LinearGradient from 'react-native-linear-gradient'
+import { LinearGradient } from 'expo-linear-gradient'
 import GlassCard from '../design/components/GlassCard'
 import DifficultyBadge from '../design/components/DifficultyBadge'
 import { colors as designColors, gradients, spacing } from '../design/tokens'
@@ -49,6 +49,13 @@ export default function GameCard({
     iconFamily === 'Ionicons' ? Ionicons :
     iconFamily === 'FontAwesome5' ? FontAwesome5 :
     MaterialCommunityIcons
+
+  const themeColors = colors || {
+    cardBg: designColors.Surface,
+    border: designColors.SurfaceBorder,
+    text: designColors.TextPrimary,
+    textSecondary: designColors.TextMuted,
+  }
 
   // Get game-specific gradient
   const gradientKey = GAME_GRADIENT_MAP[title]
@@ -107,7 +114,7 @@ export default function GameCard({
         activeOpacity={0.9}
         style={styles.touchable}
       >
-        <GlassCard style={styles.card}>
+        <GlassCard style={[styles.card, { backgroundColor: themeColors.cardBg, borderColor: themeColors.border }]}>
           {/* Gradient accent border */}
           <LinearGradient
             colors={gameGradient}
@@ -130,10 +137,10 @@ export default function GameCard({
             <DifficultyBadge difficulty={difficulty} size="small" />
           </View>
           
-          <Text style={[styles.title, { color: designColors.TextPrimary }]} numberOfLines={1}>
+          <Text style={[styles.title, { color: themeColors.text }]} numberOfLines={1}>
             {title}
           </Text>
-          <Text style={[styles.desc, { color: designColors.TextMuted }]} numberOfLines={2}>
+          <Text style={[styles.desc, { color: themeColors.textSecondary }]} numberOfLines={2}>
             {description}
           </Text>
           

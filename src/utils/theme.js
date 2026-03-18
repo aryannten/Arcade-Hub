@@ -29,6 +29,28 @@ export const themes = {
   },
 }
 
+export function resolveThemeColors(themeColors) {
+  if (themeColors) {
+    return {
+      name: themeColors.name ?? 'dark',
+      ...themeColors,
+    }
+  }
+
+  return {
+    name: 'dark',
+    bg: themes.dark.bg,
+    cardBg: themes.dark.cardBg,
+    text: themes.dark.text,
+    textSecondary: themes.dark.textSecondary,
+    border: themes.dark.border,
+    primary: themes.dark.primary,
+    success: themes.dark.success,
+    warning: themes.dark.warning,
+    error: themes.dark.error,
+  }
+}
+
 export const themeManager = {
   getTheme: async () => {
     try {

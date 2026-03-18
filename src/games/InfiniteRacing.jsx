@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { View, Text, StyleSheet, Dimensions, Animated } from 'react-native'
-import LinearGradient from 'react-native-linear-gradient'
+import { LinearGradient } from 'expo-linear-gradient'
 import { storage } from '../utils/storage'
 import { soundManager } from '../utils/sounds'
 import { colors as designColors, gradients, spacing, typography, shadows } from '../design/tokens'

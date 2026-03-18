@@ -2,8 +2,10 @@ import React from 'react'
 import { render, fireEvent } from '@testing-library/react-native'
 import GameCard from '../GameCard'
 
-// Mock react-native-linear-gradient
-jest.mock('react-native-linear-gradient', () => 'LinearGradient')
+// Mock expo-linear-gradient
+jest.mock('expo-linear-gradient', () => ({
+  LinearGradient: 'LinearGradient'
+}))
 
 describe('GameCard', () => {
   const mockColors = {
@@ -31,6 +33,18 @@ describe('GameCard', () => {
     expect(getByText('Memory Match')).toBeTruthy()
     expect(getByText('Match pairs of cards')).toBeTruthy()
     expect(getByText('Play')).toBeTruthy()
+  })
+
+  it('uses theme colors for text content', () => {
+    const { getByText } = render(<GameCard {...defaultProps} />)
+
+    const title = getByText('Memory Match')
+    const description = getByText('Match pairs of cards')
+    const titleStyle = Array.isArray(title.props.style) ? title.props.style : [title.props.style]
+    const descriptionStyle = Array.isArray(description.props.style) ? description.props.style : [description.props.style]
+
+    expect(titleStyle).toEqual(expect.arrayContaining([expect.objectContaining({ color: mockColors.text })]))
+    expect(descriptionStyle).toEqual(expect.arrayContaining([expect.objectContaining({ color: mockColors.textSecondary })]))
   })
 
   it('calls onPress when card is pressed', () => {

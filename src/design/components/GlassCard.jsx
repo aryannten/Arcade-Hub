@@ -12,9 +12,16 @@ import { colors, spacing } from '../tokens'
  * @param {StyleProp} style - Additional styles to merge
  * @param {array} gradient - Optional gradient array for accent border
  */
-export default function GlassCard({ children, style, gradient }) {
+export default function GlassCard({ children, style, gradient, colors: themeColors }) {
+  const themedStyle = themeColors
+    ? {
+        backgroundColor: themeColors.cardBg,
+        borderColor: themeColors.border,
+      }
+    : null
+
   return (
-    <View style={[styles.card, style]}>
+    <View style={[styles.card, themedStyle, style]}>
       {children}
     </View>
   )

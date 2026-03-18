@@ -154,7 +154,7 @@ export default function App() {
   if (currentGame && currentGameData) {
     const Game = currentGameData.component
     return (
-      <SafeAreaView style={[styles.root, { backgroundColor: colors.Background }]} edges={['top']}>
+      <SafeAreaView style={[styles.root, { backgroundColor: themeColors.bg }]} edges={['top']}>
         <ExpoStatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <Game onBack={handleBackToHub} colors={themeColors} />
       </SafeAreaView>
@@ -165,7 +165,7 @@ export default function App() {
   if (showAchievements) {
     const unlocked = achievementsData.filter((a) => a.unlocked).length
     return (
-      <SafeAreaView style={[styles.root, { backgroundColor: colors.Background }]} edges={['top']}>
+      <SafeAreaView style={[styles.root, { backgroundColor: themeColors.bg }]} edges={['top']}>
         <ExpoStatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <View style={[styles.topBar, { backgroundColor: themeColors.cardBg, borderBottomColor: themeColors.border }]}>
           <TouchableOpacity
@@ -213,7 +213,7 @@ export default function App() {
   if (showStats) {
     const totalPlayed = Object.values(statsData).reduce((s, g) => s + (g.gamesPlayed || 0), 0)
     return (
-      <SafeAreaView style={[styles.root, { backgroundColor: colors.Background }]} edges={['top']}>
+      <SafeAreaView style={[styles.root, { backgroundColor: themeColors.bg }]} edges={['top']}>
         <ExpoStatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <View style={[styles.topBar, { backgroundColor: themeColors.cardBg, borderBottomColor: themeColors.border }]}>
           <TouchableOpacity
@@ -281,7 +281,7 @@ export default function App() {
 
   // Main hub
   return (
-    <SafeAreaView style={[styles.root, { backgroundColor: colors.Background }]} edges={['top']}>
+    <SafeAreaView style={[styles.root, { backgroundColor: themeColors.bg }]} edges={['top']}>
       <ExpoStatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <ScrollView 
         contentContainerStyle={styles.scrollContent} 
@@ -294,22 +294,22 @@ export default function App() {
             <View style={styles.headerLeft}>
               <Text style={styles.logo}>🎮</Text>
               <View>
-                <NeonText color={colors.NeonCyan} size={typography.fontSize.xl}>
+                <NeonText color={themeColors.primary} size={typography.fontSize.xl}>
                   Arcade Hub
                 </NeonText>
-                <Text style={[styles.subtitle, { color: colors.TextMuted }]}>Play offline</Text>
+                <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>Play offline</Text>
               </View>
             </View>
             <View style={styles.headerRight}>
               <TouchableOpacity 
                 onPress={toggleSound} 
-                style={[styles.iconBtn, { backgroundColor: colors.Surface }]}
+                style={[styles.iconBtn, { backgroundColor: themeColors.cardBg }]}
               >
                 <Text style={styles.iconBtnText}>{soundEnabled ? '🔊' : '🔇'}</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 onPress={toggleTheme} 
-                style={[styles.iconBtn, { backgroundColor: colors.Surface }]}
+                style={[styles.iconBtn, { backgroundColor: themeColors.cardBg }]}
               >
                 <Text style={styles.iconBtnText}>{theme === 'dark' ? '☀️' : '🌙'}</Text>
               </TouchableOpacity>
@@ -321,40 +321,40 @@ export default function App() {
         <View style={styles.quickActions}>
           <TouchableOpacity
             onPress={() => { setShowStats(true); soundManager.playClick() }}
-            style={[styles.quickBtn, { backgroundColor: colors.Surface }]}
+            style={[styles.quickBtn, { backgroundColor: themeColors.cardBg }]}
           >
             <Text style={styles.quickIcon}>📊</Text>
-            <Text style={[styles.quickLabel, { color: colors.TextPrimary }]}>Stats</Text>
+            <Text style={[styles.quickLabel, { color: themeColors.text }]}>Stats</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => { setShowAchievements(true); soundManager.playClick() }}
-            style={[styles.quickBtn, { backgroundColor: colors.Surface }]}
+            style={[styles.quickBtn, { backgroundColor: themeColors.cardBg }]}
           >
             <Text style={styles.quickIcon}>🏅</Text>
-            <Text style={[styles.quickLabel, { color: colors.TextPrimary }]}>Achievements</Text>
+            <Text style={[styles.quickLabel, { color: themeColors.text }]}>Achievements</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => { setShowInstructions('all'); soundManager.playClick() }}
-            style={[styles.quickBtn, { backgroundColor: colors.Surface }]}
+            style={[styles.quickBtn, { backgroundColor: themeColors.cardBg }]}
           >
             <Text style={styles.quickIcon}>❓</Text>
-            <Text style={[styles.quickLabel, { color: colors.TextPrimary }]}>Help</Text>
+            <Text style={[styles.quickLabel, { color: themeColors.text }]}>Help</Text>
           </TouchableOpacity>
         </View>
 
         {/* Search */}
-        <View style={[styles.searchWrap, { backgroundColor: colors.Surface, borderColor: colors.SurfaceBorder }]}>
+        <View style={[styles.searchWrap, { backgroundColor: themeColors.cardBg, borderColor: themeColors.border }]}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
-            style={[styles.searchInput, { color: colors.TextPrimary }]}
+            style={[styles.searchInput, { color: themeColors.text }]}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search games..."
-            placeholderTextColor={colors.TextMuted}
+            placeholderTextColor={themeColors.textSecondary}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Text style={[styles.clearSearch, { color: colors.TextMuted }]}>✕</Text>
+              <Text style={[styles.clearSearch, { color: themeColors.textSecondary }]}>✕</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -367,10 +367,10 @@ export default function App() {
               onPress={() => setDifficultyFilter(d)}
               style={[
                 styles.filterBtn,
-                { backgroundColor: difficultyFilter === d ? colors.NeonCyan : colors.Surface },
+                { backgroundColor: difficultyFilter === d ? themeColors.primary : themeColors.cardBg },
               ]}
             >
-              <Text style={[styles.filterBtnText, { color: difficultyFilter === d ? '#fff' : colors.TextPrimary }]}>
+              <Text style={[styles.filterBtnText, { color: difficultyFilter === d ? '#fff' : themeColors.text }]}>
                 {d === 'all' ? '🎮 All' : d === 'easy' ? '🟢 Easy' : d === 'medium' ? '🟡 Medium' : '🔴 Hard'}
               </Text>
             </TouchableOpacity>
@@ -379,7 +379,7 @@ export default function App() {
 
         {/* Results hint */}
         {searchQuery.length > 0 && (
-          <Text style={[styles.resultHint, { color: colors.TextMuted }]}>
+          <Text style={[styles.resultHint, { color: themeColors.textSecondary }]}>
             Found {filteredGames.length} game{filteredGames.length !== 1 ? 's' : ''}
           </Text>
         )}
@@ -389,8 +389,8 @@ export default function App() {
           {filteredGames.length === 0 ? (
             <View style={styles.empty}>
               <Text style={styles.emptyIcon}>🎯</Text>
-              <Text style={[styles.emptyTitle, { color: colors.TextPrimary }]}>No games found</Text>
-              <Text style={[styles.emptySub, { color: colors.TextMuted }]}>Try a different search</Text>
+              <Text style={[styles.emptyTitle, { color: themeColors.text }]}>No games found</Text>
+              <Text style={[styles.emptySub, { color: themeColors.textSecondary }]}>Try a different search</Text>
             </View>
           ) : (
             filteredGames.map((g, index) => (
@@ -414,7 +414,7 @@ export default function App() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.TextMuted }]}>
+          <Text style={[styles.footerText, { color: themeColors.textSecondary }]}>
             Arcade Hub 
           </Text>
         </View>

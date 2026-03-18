@@ -1,212 +1,400 @@
-import { useState, useRef, useEffect } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native'
-import LinearGradient from 'react-native-linear-gradient'
+import React, { useEffect, useRef, useState } from 'react'
+import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { storage } from '../utils/storage'
+import { soundManager } from '../utils/sounds'
 import { colors as designColors, gradients, spacing, typography, shadows } from '../design/tokens'
 import GlassCard from '../design/components/GlassCard'
 import GradientButton from '../design/components/GradientButton'
-import StatBar from '../design/components/StatBar'
+import NeonText from '../design/components/NeonText'
+import { resolveThemeColors } from '../utils/theme'
 
-const CHOICES = [
-  { name: 'rock', emoji: '🪨', beats: 'scissors' },
-  { name: 'paper', emoji: '📄', beats: 'rock' },
-  { name: 'scissors', emoji: '✂️', beats: 'paper' },
+export const CHOICES = [
+  { name: 'rock', label: 'Rock', emoji: '🪨', beats: 'scissors' },
+  { name: 'paper', label: 'Paper', emoji: '📄', beats: 'rock' },
+  { name: 'scissors', label: 'Scissors', emoji: '✂️', beats: 'paper' },
 ]
 
+const CHOICE_MAP = CHOICES.reduce((map, choice) => {
+  map[choice.name] = choice
+  return map
+}, {})
+
+const ROUND_DELAY_MS = 520
+const HISTORY_LIMIT = 6
+
+function getResultTone(result) {
+  if (result === 'win') return designColors.Success
+  if (result === 'loss') return designColors.Danger
+  return designColors.NeonAmber
+}
+
+export function getRoundOutcome(playerChoiceName, computerChoiceName) {
+  if (!playerChoiceName || !computerChoiceName) return 'pending'
+  if (playerChoiceName === computerChoiceName) return 'tie'
+
+  const playerChoice = CHOICE_MAP[playerChoiceName]
+  return playerChoice.beats === computerChoiceName ? 'win' : 'loss'
+}
+
+export function getRoundMessage(result) {
+  if (result === 'win') return 'You take the round'
+  if (result === 'loss') return 'Computer takes the round'
+  if (result === 'tie') return 'Round ends in a tie'
+  return 'Choose your move'
+}
+
+export function resolveRound(playerChoiceName, computerChoiceName) {
+  const result = getRoundOutcome(playerChoiceName, computerChoiceName)
+
+  return {
+    playerChoice: CHOICE_MAP[playerChoiceName] ?? null,
+    computerChoice: CHOICE_MAP[computerChoiceName] ?? null,
+    result,
+    message: getRoundMessage(result),
+  }
+}
+
+function getRandomChoice() {
+  return CHOICES[Math.floor(Math.random() * CHOICES.length)]
+}
+
+function getHistorySummary(round) {
+  if (round.result === 'win') return 'You won'
+  if (round.result === 'loss') return 'Computer won'
+  return 'Tie round'
+}
+
 export default function RockPaperScissors({ onBack, colors }) {
+  const themeColors = resolveThemeColors(colors)
+  const isLight = themeColors.name === 'light'
+  const textPrimaryStyle = { color: themeColors.text }
+  const textSecondaryStyle = { color: themeColors.textSecondary }
+  const headerSurfaceStyle = { backgroundColor: isLight ? 'rgba(255,255,255,0.94)' : '#120D08' }
+  const dividerStyle = { backgroundColor: isLight ? themeColors.border : 'rgba(255,255,255,0.08)' }
+  const throwCardSurfaceStyle = {
+    borderColor: isLight ? themeColors.border : 'rgba(255,255,255,0.08)',
+    backgroundColor: isLight ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.04)',
+  }
+  const choiceCardSurfaceStyle = {
+    borderColor: isLight ? themeColors.border : 'rgba(255,255,255,0.08)',
+  }
+  const historyRowBorderStyle = { borderTopColor: isLight ? themeColors.border : 'rgba(255,255,255,0.06)' }
   const [playerChoice, setPlayerChoice] = useState(null)
   const [computerChoice, setComputerChoice] = useState(null)
+  const [result, setResult] = useState('pending')
+  const [status, setStatus] = useState('Choose your move')
+  const [roundNumber, setRoundNumber] = useState(0)
   const [playerScore, setPlayerScore] = useState(0)
   const [computerScore, setComputerScore] = useState(0)
-  const [result, setResult] = useState('')
-  const [gameHistory, setGameHistory] = useState([])
-  const [isPlaying, setIsPlaying] = useState(false)
+  const [ties, setTies] = useState(0)
+  const [playerStreak, setPlayerStreak] = useState(0)
+  const [bestStreak, setBestStreak] = useState(0)
+  const [history, setHistory] = useState([])
+  const [isResolving, setIsResolving] = useState(false)
 
-  // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current
-  const resultFadeAnim = useRef(new Animated.Value(0)).current
-  const scaleAnims = useRef(CHOICES.map(() => new Animated.Value(1))).current
+  const statusAnim = useRef(new Animated.Value(1)).current
+  const resultPulseAnim = useRef(new Animated.Value(1)).current
+  const choiceScaleAnims = useRef(CHOICES.map(() => new Animated.Value(1))).current
+  const timerRef = useRef(null)
 
-  // Entry animation
   useEffect(() => {
+    fadeAnim.setValue(0)
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 300,
-      useNativeDriver: true
+      duration: 280,
+      useNativeDriver: true,
     }).start()
+  }, [fadeAnim])
+
+  useEffect(() => {
+    if (!isResolving && result === 'pending') {
+      statusAnim.setValue(1)
+      return
+    }
+
+    statusAnim.setValue(0)
+    Animated.timing(statusAnim, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start()
+  }, [isResolving, result, statusAnim])
+
+  useEffect(() => {
+    if (result === 'pending') {
+      resultPulseAnim.setValue(1)
+      return
+    }
+
+    Animated.sequence([
+      Animated.timing(resultPulseAnim, {
+        toValue: 1.05,
+        duration: 140,
+        useNativeDriver: true,
+      }),
+      Animated.timing(resultPulseAnim, {
+        toValue: 1,
+        duration: 140,
+        useNativeDriver: true,
+      }),
+    ]).start()
+  }, [result, resultPulseAnim])
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
   }, [])
 
-
-  const getRandom = () => CHOICES[Math.floor(Math.random() * CHOICES.length)]
-
-  const play = (choice, index) => {
-    if (isPlaying) return
-    setIsPlaying(true)
-    setPlayerChoice(choice)
-    setComputerChoice(null)
-    setResult('')
-    resultFadeAnim.setValue(0)
-    
-    // Button scale animation
-    Animated.sequence([
-      Animated.timing(scaleAnims[index], {
-        toValue: 0.9,
-        duration: 100,
-        useNativeDriver: true
-      }),
-      Animated.timing(scaleAnims[index], {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true
-      })
-    ]).start()
-    
-    setTimeout(() => {
-      const comp = getRandom()
-      setComputerChoice(comp)
-      let res = ''
-      if (choice.name === comp.name) res = "It's a tie!"
-      else if (choice.beats === comp.name) {
-        res = 'You win!'
-        setPlayerScore((p) => p + 1)
-      } else {
-        res = 'Computer wins!'
-        setComputerScore((c) => c + 1)
-      }
-      setResult(res)
-      
-      // Result fade-in animation
-      Animated.timing(resultFadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true
-      }).start()
-      
-      setGameHistory((h) => [...h.slice(-4), { player: choice, computer: comp, result: res }])
-      const newPlayerScore = res === 'You win!' ? playerScore + 1 : playerScore
-      storage.updateGameStats('rockpaperscissors', {
-        gamesPlayed: 1,
-        gamesWon: res === 'You win!' ? 1 : 0,
-        ...(res === 'You win!' && { bestScore: newPlayerScore }),
-      })
-      setIsPlaying(false)
-    }, 600)
-  }
-
-  const reset = () => {
+  const resetRoundView = () => {
     setPlayerChoice(null)
     setComputerChoice(null)
+    setResult('pending')
+    setStatus('Choose your move')
+    setIsResolving(false)
+  }
+
+  const resetAll = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+
+    soundManager.playClick()
+    resetRoundView()
+    setRoundNumber(0)
     setPlayerScore(0)
     setComputerScore(0)
-    setResult('')
-    setGameHistory([])
-    setIsPlaying(false)
-    resultFadeAnim.setValue(0)
+    setTies(0)
+    setPlayerStreak(0)
+    setBestStreak(0)
+    setHistory([])
+  }
+
+  const playRound = (choice, index) => {
+    if (isResolving) return
+
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+
+    soundManager.playMove()
+    setIsResolving(true)
+    setPlayerChoice(choice)
+    setComputerChoice(null)
+    setResult('pending')
+    setStatus('Computer is choosing...')
+    resultPulseAnim.setValue(1)
+
+    Animated.sequence([
+      Animated.timing(choiceScaleAnims[index], {
+        toValue: 0.94,
+        duration: 90,
+        useNativeDriver: true,
+      }),
+      Animated.timing(choiceScaleAnims[index], {
+        toValue: 1,
+        duration: 90,
+        useNativeDriver: true,
+      }),
+    ]).start()
+
+    timerRef.current = setTimeout(() => {
+      const computer = getRandomChoice()
+      const round = resolveRound(choice.name, computer.name)
+      const nextRoundNumber = roundNumber + 1
+      const nextPlayerScore = round.result === 'win' ? playerScore + 1 : playerScore
+      const nextComputerScore = round.result === 'loss' ? computerScore + 1 : computerScore
+      const nextTies = round.result === 'tie' ? ties + 1 : ties
+      const nextPlayerStreak = round.result === 'win' ? playerStreak + 1 : 0
+      const nextBestStreak = Math.max(bestStreak, nextPlayerStreak)
+
+      setRoundNumber(nextRoundNumber)
+      setComputerChoice(round.computerChoice)
+      setResult(round.result)
+      setStatus(round.message)
+      setPlayerScore(nextPlayerScore)
+      setComputerScore(nextComputerScore)
+      setTies(nextTies)
+      setPlayerStreak(nextPlayerStreak)
+      setBestStreak(nextBestStreak)
+      setHistory((entries) => [
+        {
+          id: nextRoundNumber,
+          playerChoice: round.playerChoice,
+          computerChoice: round.computerChoice,
+          result: round.result,
+          message: round.message,
+        },
+        ...entries,
+      ].slice(0, HISTORY_LIMIT))
+      setIsResolving(false)
+
+      if (round.result === 'win') soundManager.playSuccess()
+      else if (round.result === 'loss') soundManager.playError()
+      else soundManager.playClick()
+
+      storage.updateGameStats('rockpaperscissors', {
+        gamesPlayed: 1,
+        gamesWon: round.result === 'win' ? 1 : 0,
+        ...(round.result === 'win' ? { bestScore: nextBestStreak } : {}),
+      })
+    }, ROUND_DELAY_MS)
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Animated.View style={{ opacity: fadeAnim }}>
-        {/* Header with gradient accent */}
+    <ScrollView style={[styles.container, { backgroundColor: themeColors.bg }]} contentContainerStyle={styles.content}>
+      <Animated.View style={[styles.contentWrap, { opacity: fadeAnim }]}>
         <LinearGradient
           colors={gradients.rockPaperScissors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.headerGradient}
         >
-          <View style={styles.header}>
+          <View style={[styles.headerCard, headerSurfaceStyle]}>
             <GradientButton
               gradient={gradients.rockPaperScissors}
-              label="← Back"
+              label="Back"
               onPress={onBack}
               style={styles.backButton}
             />
-            <Text style={styles.title}>Rock Paper Scissors</Text>
+            <View style={styles.headerCopy}>
+              <Text style={[styles.title, textPrimaryStyle]}>Rock Paper Scissors</Text>
+              <Text style={[styles.headerSubtitle, textSecondaryStyle]}>Fast rounds with clearer feedback and proper score tracking.</Text>
+            </View>
             <GradientButton
-              gradient={gradients.rockPaperScissors}
+              gradient={[designColors.NeonAmber, '#92400E']}
               label="Reset"
-              onPress={reset}
+              onPress={resetAll}
               style={styles.resetButton}
             />
           </View>
         </LinearGradient>
 
-        {/* Score display with StatBar components */}
-        <GlassCard style={styles.scoreCard}>
-          <StatBar
-            label="Your Score"
-            value={playerScore}
-            color={designColors.NeonAmber}
-          />
-          <View style={styles.statSpacer} />
-          <StatBar
-            label="Computer Score"
-            value={computerScore}
-            color={designColors.NeonAmber}
-          />
+        <GlassCard style={styles.scoreboardCard} colors={themeColors}>
+          <View style={styles.scoreCell}>
+            <Text style={[styles.scoreLabel, textSecondaryStyle]}>You</Text>
+            <Text testID="score-player" style={[styles.scoreValue, { color: designColors.Success }]}>{playerScore}</Text>
+          </View>
+          <View style={[styles.scoreDivider, dividerStyle]} />
+          <View style={styles.scoreCell}>
+            <Text style={[styles.scoreLabel, textSecondaryStyle]}>Ties</Text>
+            <Text testID="score-ties" style={[styles.scoreValue, { color: designColors.NeonAmber }]}>{ties}</Text>
+          </View>
+          <View style={[styles.scoreDivider, dividerStyle]} />
+          <View style={styles.scoreCell}>
+            <Text style={[styles.scoreLabel, textSecondaryStyle]}>Computer</Text>
+            <Text testID="score-computer" style={[styles.scoreValue, { color: designColors.Danger }]}>{computerScore}</Text>
+          </View>
         </GlassCard>
 
-        {/* Arena with glassmorphism styling */}
-        <GlassCard style={styles.arena}>
-          <View style={styles.choicesRow}>
-            <View style={styles.choiceBox}>
-              <Text style={styles.choiceLabel}>You</Text>
-              <Text style={styles.emojiBig}>{playerChoice ? playerChoice.emoji : '❓'}</Text>
+        <View style={styles.statsRow}>
+          <GlassCard style={styles.metricCard} colors={themeColors}>
+            <Text style={[styles.metricLabel, textSecondaryStyle]}>Current Streak</Text>
+            <Text testID="streak-current" style={[styles.metricValue, { color: designColors.Success }]}>{playerStreak}</Text>
+          </GlassCard>
+          <GlassCard style={styles.metricCard} colors={themeColors}>
+            <Text style={[styles.metricLabel, textSecondaryStyle]}>Best Streak</Text>
+            <Text testID="streak-best" style={[styles.metricValue, { color: designColors.NeonAmber }]}>{bestStreak}</Text>
+          </GlassCard>
+          <GlassCard style={styles.metricCard} colors={themeColors}>
+            <Text style={[styles.metricLabel, textSecondaryStyle]}>Rounds</Text>
+            <Text testID="round-count" style={[styles.metricValue, textPrimaryStyle]}>{roundNumber}</Text>
+          </GlassCard>
+        </View>
+
+        <GlassCard style={styles.arenaCard} colors={themeColors}>
+          <View style={styles.arenaHeader}>
+            <Text style={[styles.arenaEyebrow, textSecondaryStyle]}>Round Arena</Text>
+            <Animated.View style={{ opacity: statusAnim, transform: [{ scale: resultPulseAnim }] }}>
+              <NeonText
+                color={getResultTone(result)}
+                size={22}
+                style={styles.statusText}
+                testID="status-text"
+              >
+                {status}
+              </NeonText>
+            </Animated.View>
+          </View>
+
+          <View style={styles.throwRow}>
+            <View style={[styles.throwCard, throwCardSurfaceStyle]}>
+              <Text style={[styles.throwLabel, textSecondaryStyle]}>You</Text>
+              <Text testID="player-choice" style={styles.throwEmoji}>{playerChoice ? playerChoice.emoji : '—'}</Text>
+              <Text style={[styles.throwName, textPrimaryStyle]}>{playerChoice ? playerChoice.label : 'Waiting'}</Text>
             </View>
-            <View style={styles.choiceBox}>
-              <Text style={styles.choiceLabel}>Computer</Text>
-              <Text style={styles.emojiBig}>{isPlaying ? '🤔' : computerChoice ? computerChoice.emoji : '❓'}</Text>
+
+            <View style={styles.versusBadge}>
+              <Text style={styles.versusText}>VS</Text>
+            </View>
+
+            <View style={[styles.throwCard, throwCardSurfaceStyle]}>
+              <Text style={[styles.throwLabel, textSecondaryStyle]}>Computer</Text>
+              <Text testID="computer-choice" style={styles.throwEmoji}>
+                {isResolving ? '…' : computerChoice ? computerChoice.emoji : '—'}
+              </Text>
+              <Text style={[styles.throwName, textPrimaryStyle]}>
+                {isResolving ? 'Thinking' : computerChoice ? computerChoice.label : 'Waiting'}
+              </Text>
             </View>
           </View>
-          {result ? (
-            <Animated.View style={{ opacity: resultFadeAnim }}>
-              <Text style={[
-                styles.result,
-                { color: result.includes('You') ? designColors.Success : result.includes('Computer') ? designColors.Danger : designColors.TextPrimary },
-              ]}>
-                {result}
-              </Text>
-            </Animated.View>
-          ) : null}
         </GlassCard>
 
-        {/* Choice buttons using GradientButton components */}
-        <Text style={styles.pick}>Pick one:</Text>
-        <View style={styles.weapons}>
-        {CHOICES.map((c, index) => (
-          <TouchableOpacity
-            key={c.name}
-            onPress={() => play(c, index)}
-            disabled={isPlaying}
-            style={styles.weaponTouchable}
-          >
-            <Animated.View style={{ transform: [{ scale: scaleAnims[index] }] }}>
-              <GlassCard style={styles.weaponBtn}>
-                <Text style={styles.weaponEmoji}>{c.emoji}</Text>
-                <Text style={styles.weaponName}>{c.name}</Text>
-              </GlassCard>
-            </Animated.View>
-          </TouchableOpacity>
-        ))}
-      </View>
+        <View style={styles.choicesWrap}>
+          <Text style={[styles.sectionLabel, textPrimaryStyle]}>Pick your move</Text>
+          <View style={styles.choicesGrid}>
+            {CHOICES.map((choice, index) => {
+              const isSelected = playerChoice?.name === choice.name
+              return (
+                <TouchableOpacity
+                  key={choice.name}
+                  testID={`choice-${choice.name}`}
+                  activeOpacity={0.9}
+                  disabled={isResolving}
+                  onPress={() => playRound(choice, index)}
+                  style={styles.choiceTouchable}
+                >
+                  <Animated.View style={{ transform: [{ scale: choiceScaleAnims[index] }] }}>
+                    <GlassCard style={[styles.choiceCard, choiceCardSurfaceStyle, isSelected && styles.choiceCardSelected, isResolving && styles.choiceCardDisabled]} colors={themeColors}>
+                      <Text style={styles.choiceEmoji}>{choice.emoji}</Text>
+                      <Text style={[styles.choiceTitle, textPrimaryStyle]}>{choice.label}</Text>
+                      <Text style={[styles.choiceHint, textSecondaryStyle]}>Beats {CHOICE_MAP[choice.beats].label.toLowerCase()}</Text>
+                    </GlassCard>
+                  </Animated.View>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+        </View>
 
-        {/* Game history with glassmorphism */}
-        {gameHistory.length > 0 && (
-          <GlassCard style={styles.history}>
-            <Text style={styles.historyTitle}>Last games</Text>
-            {gameHistory.slice(-5).reverse().map((g, i) => (
-              <View key={i} style={styles.historyRow}>
-                <Text style={styles.historyText}>{g.player.emoji} vs {g.computer.emoji}</Text>
-                <Text style={[
-                  styles.historyRes,
-                  { color: g.result.includes('You') ? designColors.Success : g.result.includes('Computer') ? designColors.Danger : designColors.TextMuted }
-                ]}>
-                  {g.result}
+        <GlassCard style={styles.historyCard} colors={themeColors}>
+          <View style={styles.historyHeader}>
+            <Text style={[styles.historyTitle, textPrimaryStyle]}>Recent Rounds</Text>
+            <Text style={[styles.historyCaption, textSecondaryStyle]}>Most recent first</Text>
+          </View>
+
+          {history.length === 0 ? (
+            <Text style={[styles.emptyHistory, textSecondaryStyle]}>No rounds yet. Throw a move to start the match.</Text>
+          ) : (
+            history.map((round) => (
+              <View key={round.id} style={[styles.historyRow, historyRowBorderStyle]}>
+                <View>
+                  <Text style={[styles.historyRound, textSecondaryStyle]}>Round {round.id}</Text>
+                  <Text style={[styles.historyMoves, textPrimaryStyle]}>
+                    {round.playerChoice.emoji} {round.playerChoice.label} vs {round.computerChoice.emoji} {round.computerChoice.label}
+                  </Text>
+                </View>
+                <Text style={[styles.historyResult, { color: getResultTone(round.result) }]}>
+                  {getHistorySummary(round)}
                 </Text>
               </View>
-            ))}
-          </GlassCard>
-        )}
+            ))
+          )}
+        </GlassCard>
       </Animated.View>
     </ScrollView>
   )
@@ -215,128 +403,245 @@ export default function RockPaperScissors({ onBack, colors }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: designColors.Background
   },
   content: {
     padding: spacing.lg,
-    paddingBottom: 40
+    paddingBottom: spacing.xxl,
+  },
+  contentWrap: {
+    gap: spacing.md,
   },
   headerGradient: {
-    borderRadius: spacing.lg,
+    borderRadius: spacing.xl,
     padding: 2,
-    marginBottom: spacing.md
   },
-  header: {
+  headerCard: {
+    borderRadius: spacing.xl - 2,
+    padding: spacing.md,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: designColors.Background,
-    borderRadius: spacing.lg,
-    padding: spacing.md
+    gap: spacing.md,
+  },
+  headerCopy: {
+    flex: 1,
   },
   backButton: {
-    minHeight: 44,
-    minWidth: 80
+    minWidth: 84,
   },
   resetButton: {
-    minHeight: 44,
-    minWidth: 100
+    minWidth: 84,
   },
   title: {
     fontSize: typography.fontSize.xl,
     fontFamily: typography.fontFamily.heading,
     fontWeight: 'bold',
-    color: designColors.TextPrimary,
-    textAlign: 'center'
   },
-  scoreCard: {
-    marginBottom: spacing.md
-  },
-  statSpacer: {
-    height: spacing.sm
-  },
-  arena: {
-    marginBottom: spacing.md,
-    padding: spacing.xl
-  },
-  choicesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: spacing.md
-  },
-  choiceBox: {
-    alignItems: 'center'
-  },
-  choiceLabel: {
+  headerSubtitle: {
     fontSize: typography.fontSize.sm,
     fontFamily: typography.fontFamily.body,
-    color: designColors.TextMuted,
-    marginBottom: spacing.xs
+    marginTop: 2,
   },
-  emojiBig: {
-    fontSize: 48
-  },
-  result: {
-    textAlign: 'center',
-    fontSize: typography.fontSize.md,
-    fontFamily: typography.fontFamily.heading,
-    fontWeight: '600'
-  },
-  pick: {
-    fontSize: typography.fontSize.md,
-    fontFamily: typography.fontFamily.heading,
-    fontWeight: '600',
-    color: designColors.TextPrimary,
-    marginBottom: spacing.md
-  },
-  weapons: {
+  scoreboardCard: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.xl
-  },
-  weaponTouchable: {
-    minHeight: 44,
-    minWidth: 90
-  },
-  weaponBtn: {
-    padding: spacing.lg,
     alignItems: 'center',
-    minWidth: 90,
-    minHeight: 100
+    justifyContent: 'space-between',
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
   },
-  weaponEmoji: {
-    fontSize: 36,
-    marginBottom: spacing.xs
+  scoreCell: {
+    flex: 1,
+    alignItems: 'center',
   },
-  weaponName: {
+  scoreDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  scoreLabel: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.body,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: spacing.xs,
+  },
+  scoreValue: {
+    fontSize: typography.fontSize.xxl,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  metricCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+  },
+  metricLabel: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.body,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  metricValue: {
+    fontSize: typography.fontSize.xl,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+  },
+  arenaCard: {
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
+  },
+  arenaHeader: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  arenaEyebrow: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.body,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: spacing.sm,
+  },
+  statusText: {
+    textAlign: 'center',
+  },
+  throwRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  throwCard: {
+    flex: 1,
+    minHeight: 150,
+    borderRadius: spacing.xl,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.md,
+  },
+  throwLabel: {
     fontSize: typography.fontSize.sm,
     fontFamily: typography.fontFamily.body,
-    color: designColors.TextPrimary,
-    textTransform: 'capitalize'
+    marginBottom: spacing.sm,
   },
-  history: {
-    padding: spacing.md
+  throwEmoji: {
+    fontSize: 50,
+    marginBottom: spacing.sm,
+  },
+  throwName: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+  },
+  versusBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(249, 115, 22, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(249, 115, 22, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  versusText: {
+    color: designColors.NeonAmber,
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+  },
+  choicesWrap: {
+    marginTop: spacing.xs,
+  },
+  sectionLabel: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    marginBottom: spacing.md,
+  },
+  choicesGrid: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  choiceTouchable: {
+    flex: 1,
+    minWidth: 80,
+  },
+  choiceCard: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.sm,
+  },
+  choiceCardSelected: {
+    borderColor: 'rgba(245, 158, 11, 0.5)',
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    ...shadows.neonGlowAmber,
+  },
+  choiceCardDisabled: {
+    opacity: 0.82,
+  },
+  choiceEmoji: {
+    fontSize: 38,
+    marginBottom: spacing.sm,
+  },
+  choiceTitle: {
+    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    marginBottom: spacing.xs,
+  },
+  choiceHint: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.body,
+    textAlign: 'center',
+  },
+  historyCard: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
   },
   historyTitle: {
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.heading,
-    fontWeight: '600',
-    color: designColors.TextPrimary,
-    marginBottom: spacing.sm
+    fontWeight: 'bold',
+  },
+  historyCaption: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.body,
+  },
+  emptyHistory: {
+    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.body,
+    lineHeight: 20,
   },
   historyRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: spacing.xs
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
   },
-  historyText: {
+  historyRound: {
+    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.body,
+    marginBottom: 2,
+  },
+  historyMoves: {
     fontSize: typography.fontSize.sm,
     fontFamily: typography.fontFamily.body,
-    color: designColors.TextPrimary
   },
-  historyRes: {
+  historyResult: {
     fontSize: typography.fontSize.sm,
-    fontFamily: typography.fontFamily.body
-  }
+    fontFamily: typography.fontFamily.heading,
+    fontWeight: 'bold',
+    textAlign: 'right',
+  },
 })

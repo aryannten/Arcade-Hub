@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, PanResponder, Animated } from 'react-native'
-import LinearGradient from 'react-native-linear-gradient'
+import { LinearGradient } from 'expo-linear-gradient'
 import { storage } from '../utils/storage'
 import { soundManager } from '../utils/sounds'
 import { colors, gradients, spacing, typography } from '../design/tokens'
@@ -8,6 +8,7 @@ import GlassCard from '../design/components/GlassCard'
 import StatBar from '../design/components/StatBar'
 import GradientButton from '../design/components/GradientButton'
 import NeonText from '../design/components/NeonText'
+import { resolveThemeColors } from '../utils/theme'
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window')
 const W = SCREEN_W - 32
@@ -46,6 +47,7 @@ function hitRect(ball, x, y, w, h) {
 }
 
 export default function Breakout({ onBack, colors }) {
+  const themeColors = resolveThemeColors(colors)
   const [paddleX, setPaddleX] = useState((W - PADDLE_W) / 2)
   const [ball, setBall] = useState({ x: W / 2 - BALL / 2, y: H - 80, dx: 3, dy: -3 })
   const [bricks, setBricks] = useState([])
@@ -192,7 +194,7 @@ export default function Breakout({ onBack, colors }) {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themeColors.bg }]}>
       {/* Header with gradient accent */}
       <LinearGradient
         colors={gradients.breakout}
@@ -221,9 +223,9 @@ export default function Breakout({ onBack, colors }) {
 
       {/* Stats display using StatBar */}
       <View style={styles.statsContainer}>
-        <StatBar label="Score" value={score} color="#EC4899" />
-        <StatBar label="Best" value={highScore} color="#EC4899" />
-        <StatBar label="Lives" value={lives} color="#EC4899" />
+        <StatBar label="Score" value={score} color="#EC4899" colors={themeColors} />
+        <StatBar label="Best" value={highScore} color="#EC4899" colors={themeColors} />
+        <StatBar label="Lives" value={lives} color="#EC4899" colors={themeColors} />
       </View>
 
       {/* Game status messages */}
@@ -239,7 +241,7 @@ export default function Breakout({ onBack, colors }) {
       )}
       {!started && !gameOver && !won && (
         <View style={styles.messageContainer}>
-          <Text style={styles.hint}>Drag paddle, tap to launch</Text>
+          <Text style={[styles.hint, { color: themeColors.textSecondary }]}>Drag paddle, tap to launch</Text>
         </View>
       )}
 
@@ -255,7 +257,7 @@ export default function Breakout({ onBack, colors }) {
       )}
 
       {/* Game area with glassmorphism */}
-      <GlassCard style={styles.gameArea}>
+      <GlassCard style={styles.gameArea} colors={themeColors}>
         <View
           style={styles.playArea}
           {...pan.panHandlers}
@@ -321,8 +323,7 @@ export default function Breakout({ onBack, colors }) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: colors.Background
+    flex: 1
   },
   headerGradient: {
     paddingTop: spacing.md,
@@ -350,7 +351,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md
   },
   hint: {
-    color: colors.TextMuted,
     fontSize: typography.fontSize.sm,
     fontFamily: typography.fontFamily.body
   },

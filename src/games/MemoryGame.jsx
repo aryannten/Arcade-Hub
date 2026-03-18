@@ -1,17 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native'
-import LinearGradient from 'react-native-linear-gradient'
+import { LinearGradient } from 'expo-linear-gradient'
 import { storage } from '../utils/storage'
 import { colors as designColors, gradients, spacing, typography, shadows } from '../design/tokens'
 import GlassCard from '../design/components/GlassCard'
 import GradientButton from '../design/components/GradientButton'
 import StatBar from '../design/components/StatBar'
 import DifficultyBadge from '../design/components/DifficultyBadge'
+import { resolveThemeColors } from '../utils/theme'
 
 const DIFF = { easy: { pairs: 6, cols: 3 }, medium: { pairs: 8, cols: 4 }, hard: { pairs: 12, cols: 4 } }
 const EMOJIS = ['🎮', '🎯', '🎲', '🎪', '🎨', '🎭', '🎺', '🎸', '🎹', '🎤', '🎧', '🎬']
 
 export default function MemoryGame({ onBack, colors }) {
+  const themeColors = resolveThemeColors(colors)
+  const isLight = themeColors.name === 'light'
   const [cards, setCards] = useState([])
   const [flipped, setFlipped] = useState([])
   const [matched, setMatched] = useState([])
@@ -104,7 +107,7 @@ export default function MemoryGame({ onBack, colors }) {
   const { pairs, cols } = DIFF[difficulty]
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: themeColors.bg }]} contentContainerStyle={styles.content}>
       <Animated.View style={{ opacity: fadeAnim }}>
         {/* Header with gradient accent */}
         <LinearGradient
@@ -113,14 +116,14 @@ export default function MemoryGame({ onBack, colors }) {
           end={{ x: 1, y: 0 }}
           style={styles.headerGradient}
         >
-          <View style={styles.header}>
+          <View style={[styles.header, { backgroundColor: themeColors.bg }]}>
             <GradientButton
               gradient={gradients.memoryMatch}
               label="← Back"
               onPress={onBack}
               style={styles.backButton}
             />
-            <Text style={styles.title}>Memory Match</Text>
+            <Text style={[styles.title, { color: themeColors.text }]}>Memory Match</Text>
             <GradientButton
               gradient={gradients.memoryMatch}
               label="Restart"
@@ -147,31 +150,34 @@ export default function MemoryGame({ onBack, colors }) {
         </View>
 
         {/* Stats with StatBar components */}
-        <GlassCard style={styles.statsCard}>
+        <GlassCard style={styles.statsCard} colors={themeColors}>
           <StatBar
             label="Moves"
             value={moves}
             color={designColors.NeonPurple}
+            colors={themeColors}
           />
           <View style={styles.statSpacer} />
           <StatBar
             label="Matches"
             value={`${matched.length / 2} / ${pairs}`}
             color={designColors.NeonPurple}
+            colors={themeColors}
           />
           <View style={styles.statSpacer} />
           <StatBar
             label="Time"
             value={`${Math.floor(timer / 60)}:${(timer % 60).toString().padStart(2, '0')}`}
             color={designColors.NeonPurple}
+            colors={themeColors}
           />
         </GlassCard>
 
         {/* Win message with pulse animation */}
         {gameWon && (
           <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-            <GlassCard style={[styles.winCard, shadows.neonGlowPurple]}>
-              <Text style={styles.winText}>🎉 You won in {moves} moves!</Text>
+            <GlassCard style={[styles.winCard, shadows.neonGlowPurple]} colors={themeColors}>
+              <Text style={[styles.winText, { color: themeColors.text }]}>You won in {moves} moves!</Text>
             </GlassCard>
           </Animated.View>
         )}
@@ -187,8 +193,12 @@ export default function MemoryGame({ onBack, colors }) {
               <GlassCard
                 style={[
                   styles.card,
-                  visible(c.id) && styles.cardFlipped
+                  visible(c.id) && styles.cardFlipped,
+                  visible(c.id) && {
+                    backgroundColor: isLight ? 'rgba(147, 51, 234, 0.14)' : designColors.NeonPurple + '40',
+                  },
                 ]}
+                colors={themeColors}
               >
                 <Text style={styles.cardEmoji}>{visible(c.id) ? c.emoji : '?'}</Text>
               </GlassCard>
@@ -202,8 +212,7 @@ export default function MemoryGame({ onBack, colors }) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: designColors.Background
+    flex: 1
   },
   content: {
     padding: spacing.lg,
@@ -218,7 +227,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: designColors.Background,
     borderRadius: spacing.lg,
     padding: spacing.md
   },
@@ -234,7 +242,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xl,
     fontFamily: typography.fontFamily.heading,
     fontWeight: 'bold',
-    color: designColors.TextPrimary,
     textAlign: 'center'
   },
   diffRow: {
@@ -269,8 +276,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: typography.fontSize.md,
     fontFamily: typography.fontFamily.heading,
-    fontWeight: 'bold',
-    color: designColors.TextPrimary
+    fontWeight: 'bold'
   },
   grid: {
     flexDirection: 'row',
@@ -289,7 +295,6 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   cardFlipped: {
-    backgroundColor: designColors.NeonPurple + '40',
     ...shadows.neonGlowPurple
   },
   cardEmoji: {

@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native'
-import LinearGradient from 'react-native-linear-gradient'
+import { LinearGradient } from 'expo-linear-gradient'
 import { storage } from '../utils/storage'
 import { colors as designColors, gradients, spacing, typography, shadows } from '../design/tokens'
 import GlassCard from '../design/components/GlassCard'
 import GradientButton from '../design/components/GradientButton'
 import StatBar from '../design/components/StatBar'
+import { resolveThemeColors } from '../utils/theme'
 
 export default function ReactionTest({ onBack, colors }) {
+  const themeColors = resolveThemeColors(colors)
+  const idleSurface = themeColors.name === 'light' ? 'rgba(255,255,255,0.9)' : designColors.Surface
   const [phase, setPhase] = useState('start') // start | wait | go | result
   const [startTime, setStartTime] = useState(null)
   const [reaction, setReaction] = useState(null)
@@ -118,14 +121,14 @@ export default function ReactionTest({ onBack, colors }) {
   const tapAreaBg = colorAnim.interpolate({
     inputRange: [0, 0.5, 1],
     outputRange: [
-      designColors.Surface,
+      idleSurface,
       designColors.NeonAmber + '40',
       designColors.Success + '80'
     ]
   })
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themeColors.bg }]}>
       <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
         {/* Header with gradient accent */}
         <LinearGradient
@@ -134,14 +137,14 @@ export default function ReactionTest({ onBack, colors }) {
           end={{ x: 1, y: 0 }}
           style={styles.headerGradient}
         >
-          <View style={styles.header}>
+          <View style={[styles.header, { backgroundColor: themeColors.bg }]}>
             <GradientButton
               gradient={gradients.reactionTest}
               label="← Back"
               onPress={onBack}
               style={styles.backButton}
             />
-            <Text style={styles.title}>Reaction Test</Text>
+            <Text style={[styles.title, { color: themeColors.text }]}>Reaction Test</Text>
             <View style={styles.placeholder} />
           </View>
         </LinearGradient>
@@ -157,14 +160,14 @@ export default function ReactionTest({ onBack, colors }) {
               styles.tapArea,
               {
                 backgroundColor: phase === 'start' || phase === 'result' 
-                  ? designColors.Surface 
+                  ? idleSurface
                   : tapAreaBg
               }
             ]}
           >
             {phase === 'start' && (
               <View style={styles.centered}>
-                <Text style={styles.msg}>Tap to start</Text>
+                <Text style={[styles.msg, { color: themeColors.text }]}>Tap to start</Text>
                 <GradientButton
                   gradient={gradients.reactionTest}
                   label="Start Test"
@@ -174,14 +177,14 @@ export default function ReactionTest({ onBack, colors }) {
               </View>
             )}
             {phase === 'wait' && (
-              <Text style={styles.msg}>Wait for green...</Text>
+              <Text style={[styles.msg, { color: themeColors.text }]}>Wait for green...</Text>
             )}
             {phase === 'go' && (
               <Text style={[styles.msg, styles.msgGo]}>Tap!</Text>
             )}
             {phase === 'result' && (
               <Animated.View style={[styles.centered, { transform: [{ scale: scaleAnim }] }]}>
-                <Text style={styles.msg}>
+                <Text style={[styles.msg, { color: themeColors.text }]}>
                   {reaction === 'Too soon!' ? reaction : `${reaction} ms`}
                 </Text>
                 <GradientButton
@@ -196,17 +199,19 @@ export default function ReactionTest({ onBack, colors }) {
         </TouchableOpacity>
 
         {/* Stats with StatBar components */}
-        <GlassCard style={styles.statsCard}>
+        <GlassCard style={styles.statsCard} colors={themeColors}>
           <StatBar
             label="Last"
             value={reaction ? (reaction === 'Too soon!' ? reaction : `${reaction} ms`) : '–'}
             color={designColors.Success}
+            colors={themeColors}
           />
           <View style={styles.statSpacer} />
           <StatBar
             label="Best"
             value={best != null ? `${best} ms` : '–'}
             color={designColors.Success}
+            colors={themeColors}
           />
         </GlassCard>
 
@@ -224,8 +229,7 @@ export default function ReactionTest({ onBack, colors }) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: designColors.Background
+    flex: 1
   },
   headerGradient: {
     borderRadius: spacing.lg,
@@ -237,7 +241,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: designColors.Background,
     borderRadius: spacing.lg,
     padding: spacing.md
   },
@@ -249,7 +252,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xl,
     fontFamily: typography.fontFamily.heading,
     fontWeight: 'bold',
-    color: designColors.TextPrimary,
     textAlign: 'center'
   },
   placeholder: {
@@ -278,7 +280,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xxl,
     fontFamily: typography.fontFamily.heading,
     fontWeight: 'bold',
-    color: designColors.TextPrimary,
     marginBottom: spacing.lg
   },
   msgGo: {
