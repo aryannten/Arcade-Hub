@@ -26,8 +26,9 @@ Download the latest APK from our [Releases page](https://github.com/aryannten/Ar
 
 ## ✨ Features
 
-- **7 Classic Games** — Memory Match, Reaction Test, Number Guesser, Rock Paper Scissors, Tic Tac Toe, Snake, and Flappy Bird
+- **07 Classic Games** — Memory Match, Reaction Test, Number Guesser, Rock Paper Scissors, Tic Tac Toe, Snake, Flappy Bird.
 - **Modern Gaming UI** — Neon glassmorphism design with gradient accents and smooth animations
+- **PNG Game Assets** — High-quality image assets for enhanced visual experience in Flappy Bird and Snake
 - **Fully Offline** — Play anywhere, no internet required after first load
 - **Stats Tracking** — Track your performance across all games with detailed statistics
 - **Achievement System** — Unlock achievements as you play and master each game
@@ -39,45 +40,45 @@ Download the latest APK from our [Releases page](https://github.com/aryannten/Ar
 
 ## 🎮 Games
 
-### Memory Match
-**Difficulty:** Medium  
+### Memory Match  
 Flip cards and match pairs. Test your memory and concentration skills with a purple neon theme.
 
 ### Reaction Test
-**Difficulty:** Easy  
 Tap when the screen turns green! How fast are your reflexes? Features a green gradient design.
 
 ### Number Guesser
-**Difficulty:** Easy  
 Guess the secret number between 1-100. Can you do it in the fewest attempts? Blue gradient theme.
 
 ### Rock Paper Scissors
-**Difficulty:** Easy  
 Classic hand game against the computer. Best of luck! Amber gradient styling.
 
-### Tic Tac Toe
-**Difficulty:** Hard  
+### Tic Tac Toe 
 Strategic X's and O's. Play against the computer or challenge a friend. Red gradient theme.
 
 ### Snake
-**Difficulty:** Medium  
-Eat food, grow longer, avoid walls. The classic arcade experience with cyan gradient.
+Eat food, grow longer, avoid walls. The classic arcade experience with cyan gradient and custom food sprite.
 
-### Flappy Bird
-**Difficulty:** Hard  
-Tap to fly through pipes. Timing is everything! Light blue gradient design.
+### Flappy Bird 
+Tap to fly through pipes. Timing is everything! Light blue gradient design with custom bird sprite.
+
+### Breakout 
+Classic brick-breaking arcade game. Control the paddle and clear all bricks!
+
+### Infinite Racing 
+Dodge obstacles in this endless racing game. How far can you go?
 
 ## 🛠️ Tech Stack
 
 - **Framework:** React Native 0.81.5
 - **Runtime:** Expo SDK 54
 - **UI:** React 19.1.0
-- **Gradients:** react-native-linear-gradient
+- **Gradients:** expo-linear-gradient
 - **Storage:** @react-native-async-storage/async-storage
 - **Haptics:** expo-haptics
 - **Audio:** expo-av
 - **Safe Area:** react-native-safe-area-context
 - **Design System:** Custom design tokens with neon glassmorphism theme
+- **Testing:** Jest with Property-Based Testing (fast-check)
 
 ## 📂 Project Structure
 
@@ -86,6 +87,8 @@ Arcade-Hub/
 ├── App.js                      # Main app entry, hub, routing
 ├── src/
 │   ├── components/             # Reusable UI components
+│   │   ├── GameCard.jsx
+│   │   └── InstructionsModal.jsx
 │   ├── design/                 # Design system
 │   │   ├── tokens.js           # Design tokens (colors, gradients, spacing, typography)
 │   │   └── components/         # Reusable design components
@@ -101,13 +104,19 @@ Arcade-Hub/
 │   │   ├── RockPaperScissors.jsx
 │   │   ├── TicTacToe.jsx
 │   │   ├── Snake.jsx
-│   │   └── FlappyBird.jsx
+│   │   ├── FlappyBird.jsx
 │   └── utils/                  # Utility modules
 │       ├── storage.js          # AsyncStorage wrapper
 │       ├── theme.js            # Theme management
 │       ├── sounds.js           # Haptic feedback
 │       └── achievements.js     # Achievement system
-└── assets/                     # App icons and splash screens
+├── assets/                     # App icons and splash screens
+│   └── games/                  # Game-specific assets
+│       ├── flappy-bird.png     # Bird sprite for Flappy Bird
+│       └── snake-food.png      # Food sprite for Snake
+└── __tests__/                  # Test suites
+    ├── unit/                   # Unit tests
+    └── property/               # Property-based tests
 ```
 
 ## 🎨 Design System
@@ -164,9 +173,12 @@ This app is open source! The complete codebase is available for you to explore, 
 The repository contains:
 - Complete React Native source code
 - Modern design system implementation
-- Game logic for all 7 games
+- Game logic for all 10 games
+- PNG image assets for enhanced visuals
 - Comprehensive utility modules
 - Design tokens and reusable components
+- Property-based testing with fast-check
+- 97 passing tests ensuring code quality
 
 ## 🤝 Contributing
 
