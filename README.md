@@ -8,7 +8,7 @@ A collection of 7 classic mini-games built with React Native and Expo. Play offl
 
 [![Download APK](https://img.shields.io/badge/Download-APK-brightgreen?style=for-the-badge&logo=android)](https://github.com/aryannten/Arcade-Hub/releases/tag/v0.1.0)
 
-[Features](#features) • [Games](#games) • [Tech Stack](#tech-stack) • [Open Source](#open-source)
+[Features](#-features) • [Games](#-games) • [Tech Stack](#%EF%B8%8F-tech-stack) • [Open Source](#-open-source)
 
 </div>
 
