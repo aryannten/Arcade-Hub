@@ -4,29 +4,30 @@
 
 **Your pocket-sized gaming paradise**
 
-A collection of 9 classic mini-games built with React Native and Expo. Play offline, track your stats, unlock achievements, and enjoy a beautiful dark/light theme experience.
+A collection of 7 classic mini-games built with React Native and Expo. Play offline, track your stats, unlock achievements, and enjoy a modern neon glassmorphism design with beautiful dark/light theme experience.
 
-[![Download APK](https://img.shields.io/badge/Download-APK-brightgreen?style=for-the-badge&logo=android)](https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest)
+[![Download APK](https://img.shields.io/badge/Download-APK-brightgreen?style=for-the-badge&logo=android)](https://github.com/aryannten/Arcade-Hub/releases/tag/v0.1.0)
 
-[Features](#features) • [Games](#games) • [Installation](#installation) • [Tech Stack](#tech-stack) • [Project Structure](#project-structure)
+[Features](#features) • [Games](#games) • [Tech Stack](#tech-stack) • [Open Source](#open-source)
 
 </div>
 
 ---
 
-## Quick Download
+## 📥 Download
 
-**Want to try it right away?**
+**Ready to play?**
 
-Download the latest APK from our [Releases page](https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest) and install it on your Android device.
+Download the latest APK from our [Releases page](https://github.com/aryannten/Arcade-Hub/releases/tag/v0.1.0) and install it on your Android device.
 
 > Note: You may need to enable "Install from Unknown Sources" in your Android settings.
 
 ---
 
-## Features
+## ✨ Features
 
-- **9 Classic Games** — Memory Match, Reaction Test, Number Guesser, Rock Paper Scissors, Tic Tac Toe, Snake, Infinite Racing, Flappy Bird, and Breakout
+- **7 Classic Games** — Memory Match, Reaction Test, Number Guesser, Rock Paper Scissors, Tic Tac Toe, Snake, and Flappy Bird
+- **Modern Gaming UI** — Neon glassmorphism design with gradient accents and smooth animations
 - **Fully Offline** — Play anywhere, no internet required after first load
 - **Stats Tracking** — Track your performance across all games with detailed statistics
 - **Achievement System** — Unlock achievements as you play and master each game
@@ -34,157 +35,100 @@ Download the latest APK from our [Releases page](https://github.com/YOUR_USERNAM
 - **Haptic Feedback** — Feel every tap and action with responsive haptics
 - **Search & Filter** — Find games quickly by name or difficulty level
 - **Responsive Design** — Optimized for all Android screen sizes
+- **Design System** — Built with a comprehensive design token system for consistent styling
 
-## Games
+## 🎮 Games
 
 ### Memory Match
 **Difficulty:** Medium  
-Flip cards and match pairs. Test your memory and concentration skills.
+Flip cards and match pairs. Test your memory and concentration skills with a purple neon theme.
 
 ### Reaction Test
 **Difficulty:** Easy  
-Tap when the screen turns green! How fast are your reflexes?
+Tap when the screen turns green! How fast are your reflexes? Features a green gradient design.
 
 ### Number Guesser
 **Difficulty:** Easy  
-Guess the secret number between 1-100. Can you do it in the fewest attempts?
+Guess the secret number between 1-100. Can you do it in the fewest attempts? Blue gradient theme.
 
 ### Rock Paper Scissors
 **Difficulty:** Easy  
-Classic hand game against the computer. Best of luck!
+Classic hand game against the computer. Best of luck! Amber gradient styling.
 
 ### Tic Tac Toe
 **Difficulty:** Hard  
-Strategic X's and O's. Play against the computer or challenge a friend.
+Strategic X's and O's. Play against the computer or challenge a friend. Red gradient theme.
 
 ### Snake
 **Difficulty:** Medium  
-Eat food, grow longer, avoid walls. The classic arcade experience.
-
-### Infinite Racing
-**Difficulty:** Hard  
-Dodge obstacles and switch lanes. How far can you go?
+Eat food, grow longer, avoid walls. The classic arcade experience with cyan gradient.
 
 ### Flappy Bird
 **Difficulty:** Hard  
-Tap to fly through pipes. Timing is everything!
+Tap to fly through pipes. Timing is everything! Light blue gradient design.
 
-### Breakout
-**Difficulty:** Medium  
-Break bricks with your paddle. Clear all levels!
-
-## Installation
-
-### Prerequisites
-
-- Node.js (v16 or higher)
-- npm or yarn
-- Expo CLI (optional, but recommended)
-
-### Quick Start
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/aryannten/Arcade-Hub
-   cd mini-games-app
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start the development server**
-   ```bash
-   npm start
-   ```
-
-### Running on Android
-
-#### Option 1: Expo Go (Fastest)
-
-1. Install **Expo Go** from the Google Play Store
-2. Run `npm start` in your project directory
-3. Scan the QR code with Expo Go or your camera app
-4. The app will load and run fully offline after the first open
-
-#### Option 2: Android Emulator
-
-1. Install [Android Studio](https://developer.android.com/studio)
-2. Set up an Android Virtual Device (AVD)
-3. Set `ANDROID_HOME` environment variable
-   - Windows: `C:\Users\<YourUsername>\AppData\Local\Android\Sdk`
-   - macOS/Linux: `~/Library/Android/sdk`
-4. Run:
-   ```bash
-   npm run android
-   ```
-
-#### Option 3: Build APK
-
-Build a standalone APK for distribution:
-
-```bash
-# Install EAS CLI globally
-npm install -g eas-cli
-
-# Login to your Expo account
-eas login
-
-# Build APK
-eas build -p android --profile preview
-```
-
-Download the APK from the provided link and install it on your device.
-
-## Tech Stack
+## 🛠️ Tech Stack
 
 - **Framework:** React Native 0.81.5
 - **Runtime:** Expo SDK 54
 - **UI:** React 19.1.0
+- **Gradients:** react-native-linear-gradient
 - **Storage:** @react-native-async-storage/async-storage
 - **Haptics:** expo-haptics
 - **Audio:** expo-av
 - **Safe Area:** react-native-safe-area-context
+- **Design System:** Custom design tokens with neon glassmorphism theme
 
-## Project Structure
+## 📂 Project Structure
 
 ```
-Arcade-Hub
-/
+Arcade-Hub/
 ├── App.js                      # Main app entry, hub, routing
-├── index.js                    # Expo entry point
-├── app.json                    # Expo configuration
-├── eas.json                    # EAS Build configuration
-├── package.json                # Dependencies
-├── assets/                     # App icons and splash screens
-│   ├── icon.png
-│   ├── splash-icon.png
-│   ├── adaptive-icon.png
-│   └── favicon.png
-└── src/
-    ├── components/             # Reusable UI components
-    │   ├── GameCard.jsx        # Game selection card
-    │   └── InstructionsModal.jsx # Help modal
-    ├── games/                  # Individual game screens
-    │   ├── index.js            # Game exports
-    │   ├── MemoryGame.jsx
-    │   ├── ReactionTest.jsx
-    │   ├── NumberGuesser.jsx
-    │   ├── RockPaperScissors.jsx
-    │   ├── TicTacToe.jsx
-    │   ├── Snake.jsx
-    │   ├── InfiniteRacing.jsx
-    │   ├── FlappyBird.jsx
-    │   └── Breakout.jsx
-    └── utils/                  # Utility modules
-        ├── storage.js          # AsyncStorage wrapper
-        ├── theme.js            # Theme management
-        ├── sounds.js           # Haptic feedback
-        └── achievements.js     # Achievement system
+├── src/
+│   ├── components/             # Reusable UI components
+│   ├── design/                 # Design system
+│   │   ├── tokens.js           # Design tokens (colors, gradients, spacing, typography)
+│   │   └── components/         # Reusable design components
+│   │       ├── GlassCard.jsx
+│   │       ├── GradientButton.jsx
+│   │       ├── StatBar.jsx
+│   │       ├── DifficultyBadge.jsx
+│   │       └── NeonText.jsx
+│   ├── games/                  # Individual game screens
+│   │   ├── MemoryGame.jsx
+│   │   ├── ReactionTest.jsx
+│   │   ├── NumberGuesser.jsx
+│   │   ├── RockPaperScissors.jsx
+│   │   ├── TicTacToe.jsx
+│   │   ├── Snake.jsx
+│   │   └── FlappyBird.jsx
+│   └── utils/                  # Utility modules
+│       ├── storage.js          # AsyncStorage wrapper
+│       ├── theme.js            # Theme management
+│       ├── sounds.js           # Haptic feedback
+│       └── achievements.js     # Achievement system
+└── assets/                     # App icons and splash screens
 ```
 
-## Features in Detail
+## 🎨 Design System
+
+Arcade Hub features a comprehensive design system with:
+
+### Design Tokens
+- **Colors:** Background, Surface, Neon accents (Cyan, Purple, Amber, Red)
+- **Gradients:** Game-specific 2-color gradients for each game
+- **Spacing:** Consistent spacing scale (xs to xxl)
+- **Typography:** Custom font families and size scale
+- **Shadows:** Neon glow effects for depth and emphasis
+
+### Reusable Components
+- **GlassCard:** Glassmorphism container with blur effect
+- **GradientButton:** Interactive buttons with gradient backgrounds
+- **StatBar:** Statistics display with label and value
+- **DifficultyBadge:** Color-coded difficulty indicators
+- **NeonText:** Text with neon glow effect
+
+## 📊 Features in Detail
 
 ### Stats System
 Track your performance across all games:
@@ -203,26 +147,28 @@ Unlock achievements as you play:
 - And many more!
 
 ### Theme System
-Beautiful dark and light themes:
-- Smooth transitions
-- Consistent color palette
+Beautiful dark and light themes with modern gaming aesthetics:
+- Neon glassmorphism design
+- Game-specific gradient color schemes
+- Smooth transitions and animations
+- Consistent design token system
 - Optimized for readability
 - Persistent theme selection
 
-## Scripts
+## 🌟 Open Source
 
-```bash
-npm start          # Start Expo development server
-npm run android    # Run on Android emulator/device
-npm run ios        # Run on iOS simulator (macOS only)
-npm run web        # Run in web browser
-```
+This app is open source! The complete codebase is available for you to explore, learn from, and contribute to. Feel free to check out the code, understand how it works, and see how the modern gaming UI was implemented.
 
-## Screenshots
+### Want to explore the code?
 
-> Add your app screenshots here to showcase the UI
+The repository contains:
+- Complete React Native source code
+- Modern design system implementation
+- Game logic for all 7 games
+- Comprehensive utility modules
+- Design tokens and reusable components
 
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Feel free to:
 - Report bugs
@@ -231,26 +177,12 @@ Contributions are welcome! Feel free to:
 - Enhance UI/UX
 - Add new features
 
-## License
+## 📄 License
 
 This project is open source and available under the MIT License.
-
-## Future Enhancements
-
-- [ ] Multiplayer support
-- [ ] Online leaderboards
-- [ ] More games
-- [ ] Custom themes
-- [ ] Sound effects
-- [ ] Game tutorials
-- [ ] Social sharing
 
 ---
 
 <div align="center">
-
-**Made with React Native and Expo**
-
-Star this repo if you like it!
 
 </div>
